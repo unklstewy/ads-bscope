@@ -130,6 +130,7 @@ type aircraftPosition struct {
 }
 
 // insertPositionHistory stores a position record with calculated deltas.
+// Skips insertion if aircraft position hasn't changed (prevents redundant data).
 func (r *AircraftRepository) insertPositionHistory(
 	ctx context.Context,
 	aircraft adsb.Aircraft,
@@ -146,6 +147,18 @@ func (r *AircraftRepository) insertPositionHistory(
 		actualSpeed       sql.NullFloat64
 		actualVerticalRate sql.NullFloat64
 	)
+	
+	// Check if position has changed since last update
+	if prevPos != nil {
+		// Skip insertion if position is unchanged (common for grounded aircraft)
+		// Consider position unchanged if:
+		// - Lat/Lon unchanged (to 6 decimal places = ~0.1m precision)
+		// - Altitude unchanged (to nearest foot)
+		// - Ground speed near zero (<1 knot)
+		if positionsEqual(aircraft, *prevPos) {
+			return nil // Skip redundant position insert
+		}
+	}
 
 	// Calculate deltas if we have a previous position
 	if prevPos != nil {
@@ -217,6 +230,35 @@ func (r *AircraftRepository) insertPositionHistory(
 	)
 
 	return err
+}
+
+// positionsEqual checks if two aircraft positions are effectively identical.
+// This prevents storing redundant position history for stationary aircraft.
+func positionsEqual(current adsb.Aircraft, prev aircraftPosition) bool {
+	// Position tolerance: 0.000001 degrees ≈ 0.1 meters
+	const positionTolerance = 0.000001
+	// Altitude tolerance: 1 foot
+	const altitudeTolerance = 1.0
+	// Speed threshold: Consider stationary if <1 knot
+	const speedThreshold = 1.0
+	
+	// Check if lat/lon unchanged
+	latChanged := math.Abs(current.Latitude-prev.Latitude) > positionTolerance
+	lonChanged := math.Abs(current.Longitude-prev.Longitude) > positionTolerance
+	
+	// Check if altitude changed
+	altChanged := math.Abs(current.Altitude-prev.AltitudeFt) > altitudeTolerance
+	
+	// Check if aircraft is moving (either current or previous speed >1 knot)
+	isMoving := current.GroundSpeed >= speedThreshold || prev.GroundSpeedKts >= speedThreshold
+	
+	// Position is considered equal if:
+	// - Lat/lon unchanged AND altitude unchanged AND not moving
+	// This allows position updates for:
+	// - Any aircraft in motion
+	// - Any change in position (even at low speed)
+	// - Any change in altitude
+	return !latChanged && !lonChanged && !altChanged && !isMoving
 }
 
 // UpdateTrackableStatus updates the is_trackable flag based on altitude limits.
