@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:awy="http://www.faa.gov/aixm5.1/awy" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:aixm="http://www.aixm.aero/schema/5.1" targetNamespace="http://www.faa.gov/aixm5.1/awy" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<import namespace="http://www.aixm.aero/schema/5.1" schemaLocation="../xsd/AIXM_Features.xsd"/>
+	<import namespace="http://www.opengis.net/gml/3.2" schemaLocation="../xsd/ISO_19136_Schemas/gml.xsd"/>
+	<element name="RouteSegmentExtension" type="awy:RouteSegmentExtensionType" substitutionGroup="aixm:AbstractRouteSegmentExtension"/>
+	<element name="NavaidExtension" type="awy:NavaidExtensionType" substitutionGroup="aixm:AbstractNavaidExtension"/>
+	<element name="DesignatedPointExtension" type="awy:DesignatedPointExtensionType" substitutionGroup="aixm:AbstractDesignatedPointExtension"/>
+	<complexType name="RouteSegmentExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="airwayPointSequenceNumber" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="chartPublicationDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="trackAngleOutbound" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="distanceToChangeOverPoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="trackAngleInbound" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="distanceToNextPointInNauticalMiles" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="bearing" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="distanceToNextPointInSegmentInMiles" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointTopointMinimumEnrouteDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointToPointMinimumEnrouteAltitudeOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointToPointMinimumEnrouteDirectionOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airwayGapFlagIndicator" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="1"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="distanceFromThisPointToChangeOverPointForNextNavaid" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="directionOfCrossing" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="minimumCrossingAltitudeOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="directionOfCrossingOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="usAirspaceOnlyIndicator" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="pointToPointGpsMinimumEnrouteAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointToPointGpsMinimumEnrouteAltitudeOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="magneticVariation" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointToPointGpsMinimumEnrouteDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pointToPointGpsMinimumEnrouteOppositeDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="reservedToPoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="33"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="reservedFromPoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="reservedNextMEApoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="40"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="reservedMCAPoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="40"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="NavaidExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="navaidIdentifier" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="navaidState" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="navaidARTCC" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="DesignatedPointExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="fixTypePublicationCategory" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="15"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="fixMinimumReceptionAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="fixState" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="fixARTCC" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="ICAORegCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+</schema>

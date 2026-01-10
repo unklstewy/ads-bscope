@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:apt="http://www.faa.gov/aixm5.1/apt" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:aixm="http://www.aixm.aero/schema/5.1" targetNamespace="http://www.faa.gov/aixm5.1/apt" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<import namespace="http://www.aixm.aero/schema/5.1" schemaLocation="../xsd/AIXM_Features.xsd"/>
+	<import namespace="http://www.opengis.net/gml/3.2" schemaLocation="../xsd/ISO_19136_Schemas/gml.xsd"/>
+	<element name="AirportSuppliesServiceExtension" type="apt:AirportSuppliesServiceExtensionType" substitutionGroup="aixm:AbstractAirportSuppliesServiceExtension"/>
+	<element name="RunwayDirectionExtension" type="apt:RunwayDirectionExtensionType" substitutionGroup="aixm:AbstractRunwayDirectionExtension"/>
+	<element name="RunwayExtension" type="apt:RunwayExtensionType" substitutionGroup="aixm:AbstractRunwayExtension"/>
+	<element name="AirportHeliportExtension" type="apt:AirportHeliportExtensionType" substitutionGroup="aixm:AbstractAirportHeliportExtension"/>
+	<element name="GlidepathExtension" type="apt:GlidepathExtensionType" substitutionGroup="aixm:AbstractGlidepathExtension"/>
+	<element name="TouchDownLiftOffExtension" type="apt:TouchDownLiftOffExtensionType" substitutionGroup="aixm:AbstractTouchDownLiftOffExtension"/>
+	<element name="ElevatedPoint" type="aixm:ElevatedPointType" substitutionGroup="aixm:Point">
+		<annotation>
+			<documentation>An AIXM Point derived from GM_Point that includes properties for describing a point with elevation and vertical extent.  Used in obstacles, navaids, etc.</documentation>
+		</annotation>
+	</element>
+	<simpleType name="typeCode">
+		<annotation>
+			<documentation>Class / Type code.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="15"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="designator">
+		<annotation>
+			<documentation>UNIQUE 3-4 CHARACTER ALPHANUMERIC IDENTIFIER</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="0"/>
+			<maxLength value="4"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="faaRegionCode">
+		<annotation>
+			<documentation>Code that identifies the region in which airport is located.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<length value="3"/>
+			<enumeration value="AAL"/>
+			<enumeration value="ACE"/>
+			<enumeration value="AEA"/>
+			<enumeration value="AGL"/>
+			<enumeration value="ANE"/>
+			<enumeration value="ANM"/>
+			<enumeration value="ASO"/>
+			<enumeration value="ASW"/>
+			<enumeration value="AWP"/>
+			<enumeration value="AIN"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="type">
+		<annotation>
+			<documentation> LANDING FACILITY TYPE</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<length value="13"/>
+		</restriction>
+	</simpleType>
+	<complexType name="AirportHeliportExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="airportSiteNumber" minOccurs="0">
+						<annotation>
+							<documentation>Unique landing facility site number assigned to the airport.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="11"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertificationTypeDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="15"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="faaDistrictOrFieldOfficeCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="administativeArea" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="locationDescription" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="ownershipType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+								<enumeration value="PU"/>
+								<enumeration value="PR"/>
+								<enumeration value="MA"/>
+								<enumeration value="MN"/>
+								<enumeration value="MR"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="referencePointDeterminationMethod" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="1"/>
+								<enumeration value="E"/>
+								<enumeration value="S"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="elevationDeterminationMethod" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="1"/>
+								<enumeration value="E"/>
+								<enumeration value="S"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="aeronauticalSectionalChart" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="30"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="countyName" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="21"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="countyStatePostOfficeCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="landSize" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertTypeDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="15"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="statusCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="CI"/>
+								<enumeration value="CP"/>
+								<enumeration value="O"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertClassCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="I"/>
+								<enumeration value="II"/>
+								<enumeration value="III"/>
+								<enumeration value="IV"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertOneCharacterCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="1"/>
+								<enumeration value="A"/>
+								<enumeration value="B"/>
+								<enumeration value="C"/>
+								<enumeration value="D"/>
+								<enumeration value="L"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertOneCharacterCode2" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="1"/>
+								<enumeration value="S"/>
+								<enumeration value="U"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="arffCertDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="npiasFederalAgreementsCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="analysisDetermination" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="CONDITIONAL"/>
+								<enumeration value="NOT ANALYZED"/>
+								<enumeration value="OBJECTIONABLE"/>
+								<enumeration value="NO OBJECTION"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfSingleEngineAircraft" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfMultiEngineAircraft" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfJetEngineAircraft" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfHelicopter" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfOperationalGlider" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfMilitaryAircraft" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="numberOfUltralightAircraft" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="statusDuringNationalEmergency" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="18"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="militaryDeptsMaintainEmergencyUse" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="inspectionMethod" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="F"/>
+								<enumeration value="S"/>
+								<enumeration value="C"/>
+								<enumeration value="1"/>
+								<enumeration value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="inspectionAgency" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="F"/>
+								<enumeration value="S"/>
+								<enumeration value="C"/>
+								<enumeration value="N"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="lastInspectionDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="dateOflastInfoRequestCompleted" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="lightingSchedule" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="beaconLightingSchedule" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="trafficControlTowerOnAirport" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="unicomFrequencies" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="segmentedCircleMarkerOnAirport" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="Y"/>
+								<enumeration value="N"/>
+								<enumeration value="NONE"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="markerLensColor" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<enumeration value="CG"/>
+								<enumeration value="CY"/>
+								<enumeration value="CGY"/>
+								<enumeration value="SCG"/>
+								<enumeration value="C"/>
+								<enumeration value="Y"/>
+								<enumeration value="G"/>
+								<enumeration value="N"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="landingFeeChargedToNonCommercialUsers" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="landingFacilityMedicalUse" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="commercialServices" type="aixm:TextNameType" nillable="true" minOccurs="0"/>
+					<element name="commuterServices" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airTaxiOperations" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="generalAviationLocalOperations" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="generalAviationItinerantOperations" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="militaryAircraftOperations" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="annualOperationEndDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="contractFuelAvailability" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="transientStorageFacilities" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="12"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="otherAvailableAirportServices" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="71"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airportAttendanceScheduleSequenceNumber" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airportAttendanceSchedule" type="aixm:TextNameType" nillable="true" minOccurs="0"/>
+					<element name="airportAttendanceScheduleSequenceNumber2" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airportAttendanceSchedule2" type="aixm:TextNameType" nillable="true" minOccurs="0"/>
+					<element name="airportAttendanceScheduleSequenceNumber3" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airportAttendanceSchedule3" type="aixm:TextNameType" nillable="true" minOccurs="0"/>
+					<element name="airportAttendanceScheduleSequenceNumber4" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="airportAttendanceSchedule4" type="aixm:TextNameType" nillable="true" minOccurs="0"/>
+					<element name="designatedAsIntlAptOfEntry" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="designatedAsLandingAirport" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="grantsMilitarylanding" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="faaDesignator" type="aixm:TextDesignatorType" nillable="true" minOccurs="0"/>
+					<element name="stateName" type="aixm:TextNameType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>State Name. (Ex: Virginia)</documentation>
+						</annotation>
+					</element>
+					<element name="faaRegionCode" type="apt:faaRegionCode" nillable="true" minOccurs="0"/>
+					<element name="AircraftCharacteristic" type="aixm:AircraftCharacteristicType" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="TouchDownLiftOffExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="trueBearing" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="ilsType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<maxLength value="10"/>
+								<enumeration value="ILS"/>
+								<enumeration value="MLS"/>
+								<enumeration value="SDF"/>
+								<enumeration value="LOCALIZER"/>
+								<enumeration value="LDA"/>
+								<enumeration value="ISMLS"/>
+								<enumeration value="ILS/DME"/>
+								<enumeration value="SDF/DME"/>
+								<enumeration value="LOC/DME"/>
+								<enumeration value="LOC/GS"/>
+								<enumeration value="LDA/DME"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="rightHandTrafficPattern" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="AirportSuppliesServiceExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="airframeRepairType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+								<enumeration value="MAJOR"/>
+								<enumeration value="MINOR"/>
+								<enumeration value="NONE"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="powerPlantRepairType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+								<enumeration value="MAJOR"/>
+								<enumeration value="MINOR"/>
+								<enumeration value="NONE"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="RunwayDirectionExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="visualGlideSlopeIndicators" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<maxLength value="5"/>
+								<enumeration value="S2L"/>
+								<enumeration value="S2R"/>
+								<enumeration value="V2L"/>
+								<enumeration value="V2R"/>
+								<enumeration value="V4L"/>
+								<enumeration value="V4R"/>
+								<enumeration value="V4L"/>
+								<enumeration value="V6L"/>
+								<enumeration value="V6R"/>
+								<enumeration value="V12"/>
+								<enumeration value="V16"/>
+								<enumeration value="P2L"/>
+								<enumeration value="P2R"/>
+								<enumeration value="P4L"/>
+								<enumeration value="P4R"/>
+								<enumeration value="NSTD"/>
+								<enumeration value="PVT"/>
+								<enumeration value="VAS"/>
+								<enumeration value="NONE"/>
+								<enumeration value="N"/>
+								<enumeration value="TRIL"/>
+								<enumeration value="TRIR"/>
+								<enumeration value="PSIL"/>
+								<enumeration value="PSIR"/>
+								<enumeration value="PNIL"/>
+								<enumeration value="PNIR"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="displacedThresholdHeight" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="displacedThresholdLength" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayVisualRangeEquipment" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="3"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayEndGradient" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayEndGradientDirection" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="5"/>
+								<enumeration value="UP"/>
+								<enumeration value="DOWN"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayVisibilityValueEquipment" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="runwayCenterLnLightsAvailability" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="runwayEndTDLightsAvailability" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="runwayEndIdentifierLightsAvailability" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="takeoffRun" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="takeoffDistance" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="acltStopDistance" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="landingDistance" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="landingDistanceForLandAndHoldShortOperations" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="ElevatedPoint" type="aixm:ElevatedPointType" nillable="true" minOccurs="0"/>
+					<element name="idOfIntersectRunwayDefiningHoldShortPoint" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="entityDescforHoldShortPtNotIntersectingRunway" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="40"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="LatitudeOfLahsoHoldShortPointSeconds" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="12"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="LongitudeOfLahsoHoldShortPointSeconds" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="12"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="holdShortPointLatLongSource" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="16"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="holdShortPointLatLongSourceDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="RunwayExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="controllingObjectDescription" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="11"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="controllingObjectMarkedOrLighted" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<maxLength value="4"/>
+								<enumeration value="M"/>
+								<enumeration value="L"/>
+								<enumeration value="ML"/>
+								<enumeration value="NONE"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="faaCfrPart77RunwayCategory" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<maxLength value="5"/>
+								<enumeration value="A(V)"/>
+								<enumeration value="B(V)"/>
+								<enumeration value="A(NP)"/>
+								<enumeration value="C"/>
+								<enumeration value="PIR"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="controllingObjectClearanceSlope" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="controllingObjectHeightAboveRunway" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="controllingObjectDistanceFromRunwayEnd" type="aixm:ValDistanceType" nillable="true" minOccurs="0"/>
+					<element name="controllingObjectCenterlineOffset" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayWeightBearingCapacityForSingleWheel" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayWeightsBearingCapacityForDualWheel" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayWeightsBearingCapactiyForTwoDualWheels" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="runwayWeightBearingCapacityForTwoDualWheelsInDoubleTandem" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="6"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="ilsType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<maxLength value="10"/>
+								<enumeration value="ILS"/>
+								<enumeration value="MLS"/>
+								<enumeration value="SDF"/>
+								<enumeration value="LOCALIZER"/>
+								<enumeration value="LDA"/>
+								<enumeration value="ISMLS"/>
+								<enumeration value="ILS/DME"/>
+								<enumeration value="SDF/DME"/>
+								<enumeration value="LOC/DME"/>
+								<enumeration value="LOC/GS"/>
+								<enumeration value="LDA/DME"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="rightHandTrafficPattern" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="GlidepathExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="type" type="apt:typeCode" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Glide slope class / type.</documentation>
+						</annotation>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+</schema>

@@ -1,0 +1,751 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:nav="http://www.faa.gov/aixm5.1/nav" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:aixm="http://www.aixm.aero/schema/5.1" targetNamespace="http://www.faa.gov/aixm5.1/nav" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<import namespace="http://www.aixm.aero/schema/5.1" schemaLocation="../xsd/AIXM_Features.xsd"/>
+	<import namespace="http://www.opengis.net/gml/3.2" schemaLocation="../xsd/ISO_19136_Schemas/gml.xsd"/>
+	<element name="AirportHeliportExtension" type="nav:AirportHeliportExtensionType" substitutionGroup="aixm:AbstractAirportHeliportExtension"/>
+	<element name="NavaidExtension" type="nav:NavaidExtensionType" substitutionGroup="aixm:AbstractNavaidExtension"/>
+	<element name="LocalizerExtension" type="nav:LocalizerExtensionType" substitutionGroup="aixm:AbstractLocalizerExtension"/>
+	<element name="GlidepathExtension" type="nav:GlidepathExtensionType" substitutionGroup="aixm:AbstractGlidepathExtension"/>
+	<element name="MarkerBeaconExtension" type="nav:MarkerBeaconExtensionType" substitutionGroup="aixm:AbstractMarkerBeaconExtension"/>
+	<element name="RadioCommunicationChannelExtension" type="nav:RadioCommunicationChannelExtensionType" substitutionGroup="aixm:AbstractRadioCommunicationChannelExtension"/>
+	<element name="NavaidComponentExtension" type="nav:NavaidComponentExtensionType" substitutionGroup="aixm:AbstractNavaidComponentExtension"/>
+	<element name="NavaidOperationalStatusExtension" type="nav:NavaidOperationalStatusExtensionType" substitutionGroup="aixm:AbstractNavaidOperationalStatusExtension"/>
+	<simpleType name="identificationCode">
+		<annotation>
+			<documentation>Identification code.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="24"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="typeCode">
+		<annotation>
+			<documentation>Class / Type code.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="15"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="markerLocationId">
+		<annotation>
+			<documentation>Marker Location Ididentifier.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="2"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="UomPowerType">
+		<annotation>
+			<documentation>Unit for power output</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<enumeration value="Watt">
+				<annotation>
+					<documentation/>
+				</annotation>
+			</enumeration>
+			<enumeration value="KW">
+				<annotation>
+					<documentation/>
+				</annotation>
+			</enumeration>
+			<enumeration value="MW">
+				<annotation>
+					<documentation/>
+				</annotation>
+			</enumeration>
+			<enumeration value="GW">
+				<annotation>
+					<documentation/>
+				</annotation>
+			</enumeration>
+			<enumeration value="OTHER"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="faaRegionCode">
+		<annotation>
+			<documentation>Code that identifies the region in which airport is located.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<length value="3"/>
+			<enumeration value="AAL"/>
+			<enumeration value="ACE"/>
+			<enumeration value="AEA"/>
+			<enumeration value="AGL"/>
+			<enumeration value="ANE"/>
+			<enumeration value="ANM"/>
+			<enumeration value="ASO"/>
+			<enumeration value="ASW"/>
+			<enumeration value="AWP"/>
+			<enumeration value="AIN"/>
+		</restriction>
+	</simpleType>
+	<simpleType name="ValPowerTypeBase">
+		<annotation>
+			<documentation/>
+		</annotation>
+		<restriction base="xsd:unsignedInt">
+			<minInclusive value="0"/>
+			<maxInclusive value="9999"/>
+		</restriction>
+	</simpleType>
+	<complexType name="ValPowerType">
+		<simpleContent>
+			<annotation>
+				<documentation/>
+			</annotation>
+			<extension base="nav:ValPowerTypeBase">
+				<attribute name="uom" type="nav:UomPowerType" use="required"/>
+			</extension>
+		</simpleContent>
+	</complexType>
+	<simpleType name="ValDistanceTypeBase2">
+		<annotation>
+			<documentation/>
+		</annotation>
+		<restriction base="xsd:decimal"/>
+	</simpleType>
+	<complexType name="ValDistanceType2">
+		<simpleContent>
+			<annotation>
+				<documentation/>
+			</annotation>
+			<extension base="nav:ValDistanceTypeBase2">
+				<attribute name="uom" type="aixm:UomDistanceType" use="required"/>
+			</extension>
+		</simpleContent>
+	</complexType>
+	<simpleType name="codeSourceIndicating">
+		<annotation>
+			<documentation>Source information indicating code.</documentation>
+		</annotation>
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="2"/>
+			<enumeration value="A">
+				<annotation>
+					<documentation>AIR FORCE</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="B">
+				<annotation>
+					<documentation>OBSTRUCTION</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="C">
+				<annotation>
+					<documentation>COAST GUARD</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="D">
+				<annotation>
+					<documentation>CANADIAN MINISTRY OF TRANSPORTATION</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="F">
+				<annotation>
+					<documentation>FAA</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="FS">
+				<annotation>
+					<documentation>AFS-530</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="G">
+				<annotation>
+					<documentation>NOS</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="K">
+				<annotation>
+					<documentation>NGS FIELD SURVEY</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="M">
+				<annotation>
+					<documentation>DMAAC</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="N">
+				<annotation>
+					<documentation>US NAVY</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="O">
+				<annotation>
+					<documentation>OWNER</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="P">
+				<annotation>
+					<documentation>NOS PHOTO SURVEY</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="Q">
+				<annotation>
+					<documentation>QUAD PLOT</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="R">
+				<annotation>
+					<documentation>ARMY</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="S">
+				<annotation>
+					<documentation>SIAP</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="T">
+				<annotation>
+					<documentation>THIRD ORDER TRIANGULATION</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="X">
+				<annotation>
+					<documentation>ROYAL CANADIAN AIR FORCE</documentation>
+				</annotation>
+			</enumeration>
+			<enumeration value="Z">
+				<annotation>
+					<documentation>SURVEYED</documentation>
+				</annotation>
+			</enumeration>
+		</restriction>
+	</simpleType>
+	<simpleType name="operationalStatusOfILSComponent">
+		<restriction base="xsd:string">
+			<minLength value="1"/>
+			<maxLength value="22"/>
+			<enumeration value="OPERATIONAL IFR"/>
+			<enumeration value="OPERATIONAL VFR ONLY"/>
+			<enumeration value="OPERATIONAL RESTRICTED"/>
+			<enumeration value="DECOMMISSIONED"/>
+			<enumeration value="SHUTDOWN"/>
+		</restriction>
+	</simpleType>
+	<complexType name="AirportHeliportExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="airportSiteNumber" minOccurs="0">
+						<annotation>
+							<documentation>Unique landing facility site number assigned to the airport.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="11"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="faaDesignator" type="aixm:TextDesignatorType" nillable="true" minOccurs="0"/>
+					<element name="stateName" type="aixm:TextNameType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>State Name. (Ex: Virginia)</documentation>
+						</annotation>
+					</element>
+					<element name="faaRegionCode" type="nav:faaRegionCode" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="NavaidExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="facilityType" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="20"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="commomSystemUsage" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="publicUse" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="navaidClass" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="11"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="artccIdForHighAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="artccNameForHighAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="30"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="artccIdForLowAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="artccNameForLowAltitude" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="30"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="surveyAccuracy" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Survey accuracy code/description.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<length value="1"/>
+								<enumeration value="0">
+									<annotation>
+										<documentation>Unknown</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="1">
+									<annotation>
+										<documentation>degree</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="2">
+									<annotation>
+										<documentation>10 minutes</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="3">
+									<annotation>
+										<documentation>1 minute</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="4">
+									<annotation>
+										<documentation>10 seconds</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="5">
+									<annotation>
+										<documentation>1 second or better</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="6">
+									<annotation>
+										<documentation>Nos</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="7">
+									<annotation>
+										<documentation>3rd order triangulation</documentation>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="monitoringCategory" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Monitoring category.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<length value="1"/>
+								<enumeration value="1">
+									<annotation>
+										<documentation>Internal monitoring plus a status indicator installed at control point.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="2">
+									<annotation>
+										<documentation>Internal monitoring with status indicator at control point inoperative but pilot reports indicate facility is operating normally.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="3">
+									<annotation>
+										<documentation>Internal monitoring only.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="4">
+									<annotation>
+										<documentation>Internal monitor not installed.</documentation>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="vorStandardServiceVolume" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>VOR standard service volume.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="2"/>
+								<enumeration value="H">
+									<annotation>
+										<documentation>High</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="L">
+									<annotation>
+										<documentation>Low</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="T">
+									<annotation>
+										<documentation>Terminal</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="VH">
+									<annotation>
+										<documentation>VOR High</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="VL">
+									<annotation>
+										<documentation>VOR Low</documentation>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="dmeStandardServiceVolume" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>DME standard service volume.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="2"/>
+								<enumeration value="H">
+									<annotation>
+										<documentation>High</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="L">
+									<annotation>
+										<documentation>Low</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="T">
+									<annotation>
+										<documentation>Terminal</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="DH">
+									<annotation>
+										<documentation>DME High</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="DL">
+									<annotation>
+										<documentation>DME Low</documentation>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="lowAltitudeFacilityUsed" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="zMarkerAvailable" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="notamAccountabilityCode" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="4"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="quadrantIDAndRangeLegBearing" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="16"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="navaidStatus" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="30"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="pitchFlag" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="catchFlag" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="suaAtcaaFlag" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="navaidRestrictionFlag" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="hiwasFlag" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="twebRestriction" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+					<element name="stateName" type="aixm:TextNameType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>State Name. (Ex: Virginia)</documentation>
+						</annotation>
+					</element>
+					<element name="faaRegionCode" type="nav:faaRegionCode" nillable="true" minOccurs="0"/>
+					<element name="associatedCity" nillable="true" minOccurs="0" maxOccurs="unbounded">
+						<annotation>
+							<documentation>Identifies the Cities that the Airport serves.</documentation>
+						</annotation>
+						<complexType>
+							<complexContent>
+								<extension base="aixm:CityPropertyType"/>
+								<!--<attribute name="nilReason" type="gml:NilReasonEnumeration"/>-->
+							</complexContent>
+						</complexType>
+					</element>
+					<element name="contact" nillable="true" minOccurs="0" maxOccurs="unbounded">
+						<annotation>
+							<documentation>Identifies the Airport Contact.</documentation>
+						</annotation>
+						<complexType>
+							<complexContent>
+								<extension base="aixm:ContactInformationPropertyType"/>
+								<!--<attribute name="nilReason" type="gml:NilReasonEnumeration"/>-->
+							</complexContent>
+						</complexType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="LocalizerExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="localizerFacilityType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Type of the facility on site.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="15"/>
+								<enumeration value="LOC">
+									<annotation>
+										<documentation>Localizer</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="LDA">
+									<annotation>
+										<documentation>Localizer-type directional aid.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="LOC/DME">
+									<annotation>
+										<documentation>Localizer and distance measuring equipment.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="SDF/DME">
+									<annotation>
+										<documentation>Simplified directional facility and distance measuring equipment.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="SDF">
+									<annotation>
+										<documentation>Simplified directional facility.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="LDA/DME">
+									<annotation>
+										<documentation>Localizer-type directional aid and distance measuring equipment.</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="ILS/DME">
+									<annotation>
+										<documentation/>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="localizerFacilityId" type="nav:identificationCode" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Identification code of localizer.</documentation>
+						</annotation>
+					</element>
+					<element name="widthCourseAtThreshold" type="aixm:ValDistanceType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Localizer Course Width At Threshold.</documentation>
+						</annotation>
+					</element>
+					<element name="codeServices">
+						<annotation>
+							<documentation>Localizer services code.</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<length value="2"/>
+								<enumeration value="AP">
+									<annotation>
+										<documentation>Approach Control</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="AT">
+									<annotation>
+										<documentation>Automated Terminal Information Services</documentation>
+									</annotation>
+								</enumeration>
+								<enumeration value="NV">
+									<annotation>
+										<documentation>No Voice</documentation>
+									</annotation>
+								</enumeration>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="GlidepathExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="type" type="nav:typeCode" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Glide slope class / type.</documentation>
+						</annotation>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="MarkerBeaconExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="facilityType" type="nav:typeCode" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Facility type.</documentation>
+						</annotation>
+					</element>
+					<element name="locationId" type="nav:markerLocationId" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Marker location Id.</documentation>
+						</annotation>
+					</element>
+					<element name="majorAxisBearing" type="aixm:ValBearingType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>True bearing of major axis of fan marker.</documentation>
+						</annotation>
+					</element>
+					<element name="markerBeaconId" type="nav:identificationCode" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Transmitted fan marker / marine radio beacon identifier.</documentation>
+						</annotation>
+					</element>
+					<element name="lowPoweredNDBStatus" type="nav:operationalStatusOfILSComponent" nillable="true" minOccurs="0"/>
+					<element name="serviceByMarker" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Service provided by marker.
+							</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="30"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="RadioCommunicationChannelExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="simultaneousVoiceFeature" type="aixm:CodeYesNoType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Simultaneous voice feature.</documentation>
+						</annotation>
+					</element>
+					<element name="automaticVoiceIdentificationFeature" type="aixm:CodeYesNoType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Automatic voice identification feature.</documentation>
+						</annotation>
+					</element>
+					<element name="radioName" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Radio name</documentation>
+						</annotation>
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="1"/>
+								<maxLength value="60"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="powerOutput" type="nav:ValPowerType" nillable="true" minOccurs="0">
+						<annotation>
+							<documentation>Power output</documentation>
+						</annotation>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="NavaidComponentExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<group ref="nav:NavaidComponentExtensionPropertyGroup"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<group name="NavaidComponentExtensionPropertyGroup">
+		<sequence>
+			<element name="distanceFromRwyStop" type="nav:ValDistanceType2" nillable="true" minOccurs="0">
+				<annotation>
+					<documentation>Distance of component in feet from runway stop.</documentation>
+				</annotation>
+			</element>
+			<element name="directionFromRwyStop" type="aixm:CodeSideType" nillable="true" minOccurs="0">
+				<annotation>
+					<documentation>Direction of component from stop end of runway (L - Left, R - Right).</documentation>
+				</annotation>
+			</element>
+			<element name="distanceFromApproachEndOfRwy" type="nav:ValDistanceType2" nillable="true" minOccurs="0">
+				<annotation>
+					<documentation>Distance of component in feet from the approach end of runway (AER)</documentation>
+				</annotation>
+			</element>
+			<element name="distanceFromRwyCenterline" type="nav:ValDistanceType2" nillable="true" minOccurs="0">
+				<annotation>
+					<documentation>Distance of component from runway centerline (feet).</documentation>
+				</annotation>
+			</element>
+			<element name="directionFromRwyCenterline" type="aixm:CodeSideType" nillable="true" minOccurs="0">
+				<annotation>
+					<documentation>Direction of component from runway centerline (L - Left, R - Right).</documentation>
+				</annotation>
+			</element>
+		</sequence>
+	</group>
+	<complexType name="NavaidOperationalStatusExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="operationalStatus" type="nav:operationalStatusOfILSComponent"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+</schema>

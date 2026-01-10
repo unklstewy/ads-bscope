@@ -1,0 +1,58 @@
+{
+  "server": {
+    "port": "8080",
+    "host": "0.0.0.0",
+    "tls_enabled": false,
+    "tls_cert_file": "",
+    "tls_key_file": ""
+  },
+  "database": {
+    "driver": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "database": "adsbscope",
+    "username": "adsbscope",
+    "password": "changeme",
+    "ssl_mode": "disable",
+    "max_open_conns": 25,
+    "max_idle_conns": 5
+  },
+  "telescope": {
+    "base_url": "http://localhost:11111",
+    "device_number": 0,
+    "mount_type": "altaz",
+    "slew_rate": 1.0,
+    "tracking_enabled": true,
+    "model": "seestar-s50",
+    "imaging_mode": "terrestrial",
+    "supports_meridian_flip": false,
+    "max_altitude": 0,
+    "min_altitude": 0
+  },
+  "adsb": {
+    "sources": [
+      {
+        "name": "airplanes.live",
+        "type": "airplanes.live",
+        "enabled": true,
+        "base_url": "https://api.airplanes.live/v2",
+        "rate_limit_seconds": 9.0
+      }
+    ],
+    "search_radius_nm": 50.0,
+    "update_interval_seconds": 15
+  },
+  "observer": {
+    "latitude": 35.1871,
+    "longitude": -80.9218,
+    "elevation": 230.0,
+    "timezone": "America/New_York"
+  },
+  "flightaware": {
+    "api_key": "bezw1bcZFenY2RChFTtv8IkoFuS49Ggj",
+    "enabled": true,
+    "requests_per_hour": 10,
+    "auto_fetch_enabled": true,
+    "fetch_interval_minutes": 60
+  }
+}

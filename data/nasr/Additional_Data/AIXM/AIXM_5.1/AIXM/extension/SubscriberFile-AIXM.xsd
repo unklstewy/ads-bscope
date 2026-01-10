@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:faa="http://www.faa.gov/aixm5.1" xmlns:nav="http://www.faa.gov/aixm5.1/nav" xmlns:awy="http://www.faa.gov/aixm5.1/awy" xmlns:awos="http://www.faa.gov/aixm5.1/awos" xmlns:apt="http://www.faa.gov/aixm5.1/apt" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:aixm="http://www.aixm.aero/schema/5.1" targetNamespace="http://www.faa.gov/aixm5.1" elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<import namespace="http://www.aixm.aero/schema/5.1" schemaLocation="../xsd/AIXM_Features.xsd"/>
+	<import namespace="http://www.opengis.net/gml/3.2" schemaLocation="../xsd/ISO_19136_Schemas/gml.xsd"/>
+	<import namespace="http://www.faa.gov/aixm5.1/nav" schemaLocation="./Navaid_DataTypes.xsd"/>
+	<import namespace="http://www.faa.gov/aixm5.1/apt" schemaLocation="./Airport_DataTypes.xsd"/>
+	<import namespace="http://www.faa.gov/aixm5.1/awy" schemaLocation="./Airway_DataTypes.xsd"/>
+	<import namespace="http://www.faa.gov/aixm5.1/awos" schemaLocation="./Awos_DataTypes.xsd"/>
+	
+	<element name="SubscriberFile" type="faa:SubscriberFileType" substitutionGroup="gml:AbstractFeature"/>
+	<complexType name="SubscriberFileType">
+		<complexContent>
+			<extension base="aixm:AbstractAIXMMessageType">
+				<sequence>
+					<group ref="faa:SubscriberFilePropertyGroup"/>
+				</sequence>
+				<attributeGroup ref="faa:SubscriberFileAttributeGroup"/>
+			</extension>
+		</complexContent>
+	</complexType>
+	<group name="SubscriberFilePropertyGroup">
+		<sequence>
+			<element name="Member" type="faa:SubscriberFileComponentPropertyType" minOccurs="0" maxOccurs="unbounded"/>
+		</sequence>
+	</group>
+	<complexType name="SubscriberFileComponentPropertyType">
+		<complexContent>
+			<extension base="gml:AbstractFeatureMemberType">
+				<choice>
+					<element ref="aixm:Navaid"/>
+					<element ref="aixm:RunwayDirection"/>
+					<element ref="aixm:Runway"/>
+					<element ref="aixm:AirportHeliport"/>
+					<element ref="aixm:Localizer"/>
+					<element ref="aixm:Glidepath"/>
+					<element ref="aixm:MarkerBeacon"/>
+					<element ref="aixm:DME"/>
+					<element ref="aixm:OrganisationAuthority"/>
+					<element ref="aixm:TACAN"/>
+					<element ref="aixm:NDB"/>
+					<element ref="aixm:VOR"/>
+					<element ref="aixm:RadioCommunicationChannel"/>
+					<element ref="aixm:AirportSuppliesService"/>
+					<element ref="aixm:InformationService"/>
+					<element ref="aixm:Unit"/>
+					<element ref="aixm:AirTrafficControlService"/>
+					<element ref="aixm:ApproachLightingSystem"/>
+					<element ref="aixm:RunwayMarking"/>
+					<element ref="aixm:ArrestingGear"/>
+					<element ref="aixm:TouchDownLiftOff"/>
+					<element ref="aixm:SurfaceCharacteristics"/>
+					<element ref="aixm:ElevatedPoint"/>
+					<element ref="aixm:RunwayDirectionLightSystem"/>
+					<element ref="aixm:Route"/>
+					<element ref="aixm:RouteSegment"/>
+					<element ref="aixm:RoutePortion"/>
+					<element ref="aixm:ChangeOverPoint"/>
+					<element ref="aixm:DesignatedPoint"/>
+				</choice>
+			</extension>
+		</complexContent>
+	</complexType>
+	<attributeGroup name="SubscriberFileAttributeGroup">
+		<attribute name="validFrom" type="xsd:dateTime"/>
+		<attribute name="validTo" type="xsd:dateTime"/>
+		<attribute name="AIXMVersion" type="xsd:string"/>
+		<attribute name="SubscriberFileType" type="xsd:string"/>
+	</attributeGroup>
+</schema>

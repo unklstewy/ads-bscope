@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+INITSTATE.MD
+WARP.md
+*.md
+
+# Build artifacts
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*.test
+*.out
+coverage.*
+*.coverprofile
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# CI/CD
+.github/
+
+# Temporary files
+tmp/
+temp/

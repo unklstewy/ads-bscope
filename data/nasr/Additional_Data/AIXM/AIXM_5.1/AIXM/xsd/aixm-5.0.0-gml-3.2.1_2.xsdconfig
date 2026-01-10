@@ -1,0 +1,119 @@
+<!--
+
+  XmlBeans configuration file for AIXM
+ 
+  - Sets up Java package names so they end with the major version number
+
+  - Manually renames a couple of AIXM elements to avoid name collision
+    issues with a GML base class
+
+  - Manually renames a GML elements to avoid name collision issues
+    in generated Java classes
+
+-->
+  
+<xb:config xmlns:xb="http://xml.apache.org/xmlbeans/2004/02/xbean/config"
+           xmlns:aixm="http://www.aixm.aero/schema/5.1"
+           xmlns:gml="http://www.opengis.net/gml/3.2" 
+           xmlns:saa="http://www.faa.gov/AIM/SAA" >
+
+
+  <!--  
+    Set package names for current and future version 5.X release of the schema to 
+    'aero.aixm.v5'.  Intent here is that since OGC best practices state that minor
+    releases should be backwards compatible, the Java package names should not have
+    to be modified. When a major release occurs (non-backwards compatible), the 
+    package names need to be unique so the two sets of Java bindings can coexist in
+
+    This convention does obviously depend on the fact that changes to minor revision 
+    numbers are backwards-compatible. This is not always the case today, but it
+    is increasingly being adopted as a best practice by the OGC community.
+   -->  	
+  	
+  <!-- Version 5 release package name mapping -->
+  <xb:namespace uri="http://www.aixm.aero/schema/5.0">
+    <xb:package>aero.aixm.v5</xb:package>    	
+  </xb:namespace> 
+  <xb:namespace uri="http://www.aixm.aero/schema/5.1">
+    <xb:package>aero.aixm.v5</xb:package>    	
+  </xb:namespace> 
+  <xb:namespace uri="http://www.aixm.aero/schema/5.2">
+    <xb:package>aero.aixm.v5</xb:package>    	
+  </xb:namespace> 
+  <xb:namespace uri="http://www.aixm.aero/schema/5.3">
+    <xb:package>aero.aixm.v5</xb:package>    	
+  </xb:namespace> 
+
+  <!-- Version 6 release package name mapping (hypothetical) -->
+  <xb:namespace uri="http://www.aixm.aero/schema/6.0">
+    <xb:package>aero.aixm.v6</xb:package>    	
+  </xb:namespace> 
+  <xb:namespace uri="http://www.aixm.aero/schema/6.1">
+    <xb:package>aero.aixm.v6</xb:package>    	
+  </xb:namespace> 
+
+
+  <!-- 
+    AIXM defines its own versions of <aixm:description> and <aixm:name> elements
+    in a subclass of type gml:AbstractTimeSliceType, which also contains
+    <gml:description> and <gml:name>. The elements are unique since they
+    each exist in their own namespace, and normally XmlBeans deals with
+    this by creating unique Java class property names like:
+
+     <gml:description>   ->  description
+     <aixm:description>  ->  description2
+
+    In the AIXM case, the subclass restricts the base class, filtering out the
+    <gml:description> properties. This fools the XmlBeans compiler into thinking
+    it doesn't need to create a unique name, even though it really still does.
+
+    The solution is to manually remap the names for the <aixm:description>
+    and <aixm:name> elements to unique Java property names. Then the 
+    accessor methods for the AIXM-specific elements will be:
+
+      get/setAIXMDescription() 
+      get/setAIXMName() 
+
+    and they won't conflict with the get/setDescription() and get/setName()
+    methods in the GML base class.
+  -->
+  <xb:qname name="aixm:description" javaname="AIXMDescription" /> 
+  <xb:qname name="aixm:name" javaname="AIXMName" />
+  <xb:qname name="saa:name" javaname="SAAName" /> 
+
+
+
+  <!-- 
+    GML-related fix (not specific to AIXM).  This is needed when compiling to
+    Java 1.5 (to take advantage of Java Generics)
+ 
+    Substitute 'position' for 'pos' elements to avoid naming collisions
+    that crop up in GML 3.2. Otherwise two clashing versions of getPosList()
+    are created for many of the GML multi-point data types - one for the 
+    representation that uses a list of 'pos' elements, and one for the 
+    representation single 'posList' element. 
+
+    The following results in member accessor functions set/getPosition()
+    and/or set/getPositionList() being generated for elements
+    of the form <gml:pos>.
+
+    Source of this patch was the XmlBeans mailing list...
+  -->
+  <xb:qname name="gml:pos" javaname="Position"/>
+
+
+  <!-- ##any indicates all URIs. 
+    A <prefix> is used to prepend to top-level Java type names generated in this namespace. 
+    A <suffix> is used to append to top-level Java types names generated in this namespace.
+    The <prefix> and <suffix> are not used for inner Java type definitions.
+  -->
+  <!-- Not used for anything yet...
+  <xb:namespace uri="##any">
+    <xb:prefix>Xml</xb:prefix>
+    <xb:suffix>Bean</xb:suffix>
+  </xb:namespace>
+  -->
+
+
+
+</xb:config>

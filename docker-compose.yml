@@ -1,0 +1,61 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: adsbscope-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: adsbscope
+      POSTGRES_USER: adsbscope
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      # Persistent database storage
+      - postgres_data:/var/lib/postgresql/data
+      # Database initialization scripts (when they exist)
+      - ./scripts/db:/docker-entrypoint-initdb.d
+    ports:
+      # Expose for local development tools (pgAdmin, psql, etc.)
+      - "5432:5432"
+    networks:
+      - adsbscope-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adsbscope"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ADS-B Scope Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adsbscope-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Override configuration via environment variables
+      ADS_BSCOPE_DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      CONFIG_PATH: /app/configs/config.json
+    ports:
+      - "8080:8080"
+    networks:
+      - adsbscope-network
+    volumes:
+      # Mount config for easy editing without rebuild
+      - ./configs/config.json:/app/configs/config.json:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+networks:
+  adsbscope-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

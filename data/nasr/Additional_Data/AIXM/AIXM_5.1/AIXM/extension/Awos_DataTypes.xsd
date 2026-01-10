@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:awos="http://www.faa.gov/aixm5.1/awos" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:aixm="http://www.aixm.aero/schema/5.1" targetNamespace="http://www.faa.gov/aixm5.1/awos" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<import namespace="http://www.aixm.aero/schema/5.1" schemaLocation="../xsd/AIXM_Features.xsd"/>
+	<import namespace="http://www.opengis.net/gml/3.2" schemaLocation="../xsd/ISO_19136_Schemas/gml.xsd"/>
+	
+	<element name="InformationServiceExtension" type="awos:InformationServiceExtensionType" substitutionGroup="aixm:AbstractInformationServiceExtension"/>
+	<element name="RadioCommunicationChannelExtension" type="awos:RadioCommunicationChannelExtensionType" substitutionGroup="aixm:AbstractRadioCommunicationChannelExtension"/>
+	<element name="AirportHeliportExtension" type="awos:AirportHeliportExtensionType" substitutionGroup="aixm:AbstractAirportHeliportExtension"/>
+	<element name="PostalAddressExtension" type="awos:PostalAddressExtensionType" substitutionGroup="aixm:AbstractPostalAddressExtension"/>
+	<complexType name="InformationServiceExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="effectiveDate" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="10"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="commissioningStatus" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="RadioCommunicationChannelExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="frequency" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="7"/>
+							</restriction>
+						</simpleType>
+					</element>
+					<element name="commissioningStatus" type="aixm:CodeYesNoType" nillable="true" minOccurs="0"/>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="PostalAddressExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="state" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="2"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+	<complexType name="AirportHeliportExtensionType">
+		<complexContent>
+			<extension base="aixm:AbstractExtensionType">
+				<sequence>
+					<element name="landingSiteNumber" nillable="true" minOccurs="0">
+						<simpleType>
+							<restriction base="xsd:string">
+								<minLength value="0"/>
+								<maxLength value="11"/>
+							</restriction>
+						</simpleType>
+					</element>
+				</sequence>
+			</extension>
+		</complexContent>
+	</complexType>
+</schema>

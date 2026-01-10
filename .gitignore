@@ -27,6 +27,12 @@ go.work.sum
 # env file
 .env
 
+# Docker volumes and data
+*.log
+
+# Build output
+bin/
+
 # Editor/IDE
 # .idea/
 # .vscode/
