@@ -49,6 +49,14 @@ type model struct {
 	maxAlt     float64
 	zoom       float64  // Zoom level: 1.0 = normal, 2.0 = 2x closer
 	trails     map[string]*trackTrail  // ICAO -> trail
+	
+	// Radar mode
+	radarMode    bool
+	radarCenter  coordinates.Geographic
+	radarRadius  float64  // Nautical miles
+	radarAirport string
+	inputMode    string  // "airport" or "radius" or ""
+	inputBuffer  string
 }
 
 type aircraftView struct {
@@ -77,19 +85,87 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle input mode (airport code or radius entry)
+		if m.inputMode != "" {
+			switch msg.String() {
+			case "enter":
+				// Process input
+				if m.inputMode == "airport" {
+					m.radarAirport = strings.ToUpper(m.inputBuffer)
+					// Lookup airport coordinates
+					ctx := context.Background()
+					wp, err := m.fpRepo.GetWaypointByIdentifier(ctx, m.radarAirport)
+					if err == nil && wp != nil {
+						m.radarCenter = coordinates.Geographic{
+							Latitude:  wp.Latitude,
+							Longitude: wp.Longitude,
+							Altitude:  0,
+						}
+						// Move to radius input
+						m.inputMode = "radius"
+						m.inputBuffer = fmt.Sprintf("%.0f", m.radarRadius)
+					} else {
+						m.err = fmt.Errorf("airport %s not found", m.radarAirport)
+						m.inputMode = ""
+						m.inputBuffer = ""
+					}
+				} else if m.inputMode == "radius" {
+					// Parse radius
+					var radius float64
+					if _, err := fmt.Sscanf(m.inputBuffer, "%f", &radius); err == nil {
+						if radius >= 50 && radius <= 2500 {
+							m.radarRadius = radius
+							m.radarMode = true
+						} else {
+							m.err = fmt.Errorf("radius must be between 50 and 2500 NM")
+						}
+					} else {
+						m.err = fmt.Errorf("invalid radius: %s", m.inputBuffer)
+					}
+					m.inputMode = ""
+					m.inputBuffer = ""
+				}
+			case "esc":
+				// Cancel input
+				m.inputMode = ""
+				m.inputBuffer = ""
+			case "backspace":
+				if len(m.inputBuffer) > 0 {
+					m.inputBuffer = m.inputBuffer[:len(m.inputBuffer)-1]
+				}
+			default:
+				// Add character to buffer
+				if len(msg.String()) == 1 {
+					m.inputBuffer += msg.String()
+				}
+			}
+			return m, nil
+		}
+		
+		// Normal mode controls
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "r":
+			// Toggle radar mode or start radar setup
+			if m.radarMode {
+				m.radarMode = false
+			} else {
+				// Start airport input
+				m.inputMode = "airport"
+				m.inputBuffer = ""
+				m.err = nil
+			}
 		case "up", "k":
-			if m.selected > 0 {
+			if !m.radarMode && m.selected > 0 {
 				m.selected--
 			}
 		case "down", "j":
-			if m.selected < len(m.aircraft)-1 {
+			if !m.radarMode && m.selected < len(m.aircraft)-1 {
 				m.selected++
 			}
 		case "enter", " ":
-			if len(m.aircraft) > 0 && m.selected < len(m.aircraft) {
+			if !m.radarMode && len(m.aircraft) > 0 && m.selected < len(m.aircraft) {
 				m.tracking = true
 				m.trackICAO = m.aircraft[m.selected].aircraft.ICAO
 				m.telesAlt = m.aircraft[m.selected].horiz.Altitude
@@ -98,13 +174,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			m.tracking = false
 		case "+", "=":
-			// Zoom in (max 4x)
-			if m.zoom < 4.0 {
+			// Zoom in (max 4x in sky mode, increase radius in radar mode)
+			if m.radarMode {
+				if m.radarRadius < 2500 {
+					m.radarRadius *= 1.5
+					if m.radarRadius > 2500 {
+						m.radarRadius = 2500
+					}
+				}
+			} else if m.zoom < 4.0 {
 				m.zoom *= 1.5
 			}
 		case "-", "_":
-			// Zoom out (min 0.5x)
-			if m.zoom > 0.5 {
+			// Zoom out (min 0.5x in sky mode, decrease radius in radar mode)
+			if m.radarMode {
+				if m.radarRadius > 50 {
+					m.radarRadius /= 1.5
+					if m.radarRadius < 50 {
+						m.radarRadius = 50
+					}
+				}
+			} else if m.zoom > 0.5 {
 				m.zoom /= 1.5
 			}
 		case "0":
@@ -293,49 +383,113 @@ func (m model) View() string {
 		Background(lipgloss.Color("235")).
 		Padding(0, 1)
 	
-	s.WriteString(titleStyle.Render("ADS-B SCOPE TUI VIEWFINDER"))
+	title := "ADS-B SCOPE TUI VIEWFINDER"
+	if m.radarMode {
+		title = "ADS-B SCOPE RADAR MODE"
+	}
+	s.WriteString(titleStyle.Render(title))
 	s.WriteString("\n\n")
 
-	if m.err != nil {
-		s.WriteString(fmt.Sprintf("Error: %v\n", m.err))
+	// Handle input mode prompts
+	if m.inputMode != "" {
+		promptStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
+		inputStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
+		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+		
+		if m.inputMode == "airport" {
+			s.WriteString(promptStyle.Render("Enter airport code (e.g., KATL, JFK):"))
+			s.WriteString("\n")
+			s.WriteString(inputStyle.Render("> " + m.inputBuffer + "_"))
+			s.WriteString("\n\n")
+			s.WriteString(helpStyle.Render("ENTER: Submit  ESC: Cancel"))
+		} else if m.inputMode == "radius" {
+			s.WriteString(promptStyle.Render("Enter radar radius (50-2500 NM):"))
+			s.WriteString("\n")
+			s.WriteString(inputStyle.Render("> " + m.inputBuffer + "_"))
+			s.WriteString("\n\n")
+			s.WriteString(helpStyle.Render("ENTER: Submit  ESC: Cancel"))
+		}
 		return s.String()
 	}
 
-	// Sky view and legend side by side
-	sky := m.renderSky()
-	legend := m.renderLegend()
-	
-	// Split sky and legend
-	skyLines := strings.Split(sky, "\n")
-	legendLines := strings.Split(legend, "\n")
-	
-	// Combine side by side
-	maxLines := len(skyLines)
-	if len(legendLines) > maxLines {
-		maxLines = len(legendLines)
+	if m.err != nil {
+		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+		s.WriteString(errStyle.Render(fmt.Sprintf("Error: %v", m.err)))
+		s.WriteString("\n\n")
+		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+		s.WriteString(helpStyle.Render("Press any key to continue..."))
+		m.err = nil // Clear error on next update
+		return s.String()
 	}
-	
-	for i := 0; i < maxLines; i++ {
-		if i < len(skyLines) {
-			s.WriteString(skyLines[i])
-		} else {
-			s.WriteString(strings.Repeat(" ", skyWidth))
+
+	// Render based on mode
+	if m.radarMode {
+		// Radar mode view
+		radar := m.renderRadar()
+		radInfo := m.renderRadarInfo()
+		
+		// Split and combine
+		radarLines := strings.Split(radar, "\n")
+		infoLines := strings.Split(radInfo, "\n")
+		
+		maxLines := len(radarLines)
+		if len(infoLines) > maxLines {
+			maxLines = len(infoLines)
 		}
-		s.WriteString("  ") // Spacing
-		if i < len(legendLines) {
-			s.WriteString(legendLines[i])
+		
+		for i := 0; i < maxLines; i++ {
+			if i < len(radarLines) {
+				s.WriteString(radarLines[i])
+			} else {
+				s.WriteString(strings.Repeat(" ", skyWidth))
+			}
+			s.WriteString("  ") // Spacing
+			if i < len(infoLines) {
+				s.WriteString(infoLines[i])
+			}
+			s.WriteString("\n")
 		}
+		
+		// Aircraft list
+		s.WriteString(m.renderAircraftList())
+		s.WriteString("\n")
+	} else {
+		// Sky view mode
+		sky := m.renderSky()
+		legend := m.renderLegend()
+		
+		// Split sky and legend
+		skyLines := strings.Split(sky, "\n")
+		legendLines := strings.Split(legend, "\n")
+		
+		// Combine side by side
+		maxLines := len(skyLines)
+		if len(legendLines) > maxLines {
+			maxLines = len(legendLines)
+		}
+		
+		for i := 0; i < maxLines; i++ {
+			if i < len(skyLines) {
+				s.WriteString(skyLines[i])
+			} else {
+				s.WriteString(strings.Repeat(" ", skyWidth))
+			}
+			s.WriteString("  ") // Spacing
+			if i < len(legendLines) {
+				s.WriteString(legendLines[i])
+			}
+			s.WriteString("\n")
+		}
+
+		// Aircraft list
+		s.WriteString(m.renderAircraftList())
+		s.WriteString("\n")
+
+		// Controls
+		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+		s.WriteString(helpStyle.Render("↑/↓: Select  ENTER/SPACE: Track  S: Stop  R: Radar  +/-: Zoom  0: Reset  Q: Quit"))
 		s.WriteString("\n")
 	}
-
-	// Aircraft list
-	s.WriteString(m.renderAircraftList())
-	s.WriteString("\n")
-
-	// Controls
-	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	s.WriteString(helpStyle.Render("↑/↓: Select  ENTER/SPACE: Track  S: Stop  +/-: Zoom  0: Reset  Q: Quit"))
-	s.WriteString("\n")
 
 	return s.String()
 }
@@ -721,17 +875,18 @@ func main() {
 
 	// Create model
 	m := model{
-		cfg:      cfg,
-		database: database,
-		repo:     repo,
-		fpRepo:   fpRepo,
-		observer: observer,
-		minAlt:   minAlt,
-		maxAlt:   maxAlt,
-		telesAlt: 45, // Start at 45° altitude
-		telesAz:  180, // Start pointing south
-		zoom:     1.0, // Normal zoom
-		trails:   make(map[string]*trackTrail),
+		cfg:         cfg,
+		database:    database,
+		repo:        repo,
+		fpRepo:      fpRepo,
+		observer:    observer,
+		minAlt:      minAlt,
+		maxAlt:      maxAlt,
+		telesAlt:    45, // Start at 45° altitude
+		telesAz:     180, // Start pointing south
+		zoom:        1.0, // Normal zoom
+		trails:      make(map[string]*trackTrail),
+		radarRadius: 100.0, // Default radar radius 100 NM
 	}
 
 	// Initial data load
