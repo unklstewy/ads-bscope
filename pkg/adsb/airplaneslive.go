@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -59,7 +60,18 @@ func (c *AirplanesLiveClient) GetAircraft(centerLat, centerLon, radiusNM float64
 	}
 	defer resp.Body.Close()
 
-	// Check status code
+	// Check for rate limit (HTTP 429)
+	if resp.StatusCode == http.StatusTooManyRequests {
+		retryAfter := parseRetryAfter(resp.Header)
+		return nil, &RateLimitError{
+			StatusCode: resp.StatusCode,
+			RetryAfter: retryAfter,
+			Message:    "Rate limit exceeded",
+			Headers:    extractRateLimitHeaders(resp.Header),
+		}
+	}
+	
+	// Check other error status codes
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
@@ -101,7 +113,18 @@ func (c *AirplanesLiveClient) GetAircraftByICAO(icao string) (*Aircraft, error) 
 	}
 	defer resp.Body.Close()
 
-	// Check status code
+	// Check for rate limit (HTTP 429)
+	if resp.StatusCode == http.StatusTooManyRequests {
+		retryAfter := parseRetryAfter(resp.Header)
+		return nil, &RateLimitError{
+			StatusCode: resp.StatusCode,
+			RetryAfter: retryAfter,
+			Message:    "Rate limit exceeded",
+			Headers:    extractRateLimitHeaders(resp.Header),
+		}
+	}
+	
+	// Check other error status codes
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
 	}
@@ -262,4 +285,107 @@ func parseAltitude(val interface{}) *float64 {
 	default:
 		return nil
 	}
+}
+
+// RateLimitError represents an HTTP 429 rate limit error with retry information.
+type RateLimitError struct {
+	StatusCode int
+	RetryAfter time.Duration
+	Message    string
+	Headers    RateLimitHeaders
+}
+
+// RateLimitHeaders contains rate limit information from response headers.
+type RateLimitHeaders struct {
+	Limit     int // X-Rate-Limit-Limit: Maximum requests allowed
+	Remaining int // X-Rate-Limit-Remaining: Requests remaining in current window
+	Reset     time.Time // X-Rate-Limit-Reset: When the rate limit resets
+}
+
+func (e *RateLimitError) Error() string {
+	if e.RetryAfter > 0 {
+		return fmt.Sprintf("%s (retry after %v)", e.Message, e.RetryAfter)
+	}
+	return e.Message
+}
+
+// IsRateLimitError checks if an error is a rate limit error.
+func IsRateLimitError(err error) (*RateLimitError, bool) {
+	if rle, ok := err.(*RateLimitError); ok {
+		return rle, true
+	}
+	return nil, false
+}
+
+// parseRetryAfter extracts the Retry-After header value.
+// Returns the duration to wait, or 0 if header is not present.
+// Supports both delay-seconds (integer) and HTTP-date formats.
+//
+// Examples:
+//   Retry-After: 30                           -> 30 seconds
+//   Retry-After: Wed, 21 Oct 2015 07:28:00 GMT -> duration until that time
+func parseRetryAfter(headers http.Header) time.Duration {
+	retryAfter := headers.Get("Retry-After")
+	if retryAfter == "" {
+		return 0
+	}
+	
+	// Try parsing as delay-seconds (e.g., "30")
+	if seconds, err := strconv.Atoi(retryAfter); err == nil && seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	
+	// Try parsing as HTTP-date (e.g., "Wed, 21 Oct 2015 07:28:00 GMT")
+	if retryTime, err := http.ParseTime(retryAfter); err == nil {
+		duration := time.Until(retryTime)
+		if duration > 0 {
+			return duration
+		}
+	}
+	
+	return 0
+}
+
+// extractRateLimitHeaders extracts common rate limit headers from the response.
+// These headers help understand the current rate limit status.
+func extractRateLimitHeaders(headers http.Header) RateLimitHeaders {
+	rlh := RateLimitHeaders{
+		Limit:     -1,
+		Remaining: -1,
+	}
+	
+	// X-Rate-Limit-Limit or X-RateLimit-Limit
+	if limit := headers.Get("X-Rate-Limit-Limit"); limit != "" {
+		if val, err := strconv.Atoi(limit); err == nil {
+			rlh.Limit = val
+		}
+	} else if limit := headers.Get("X-RateLimit-Limit"); limit != "" {
+		if val, err := strconv.Atoi(limit); err == nil {
+			rlh.Limit = val
+		}
+	}
+	
+	// X-Rate-Limit-Remaining or X-RateLimit-Remaining
+	if remaining := headers.Get("X-Rate-Limit-Remaining"); remaining != "" {
+		if val, err := strconv.Atoi(remaining); err == nil {
+			rlh.Remaining = val
+		}
+	} else if remaining := headers.Get("X-RateLimit-Remaining"); remaining != "" {
+		if val, err := strconv.Atoi(remaining); err == nil {
+			rlh.Remaining = val
+		}
+	}
+	
+	// X-Rate-Limit-Reset or X-RateLimit-Reset (Unix timestamp)
+	if reset := headers.Get("X-Rate-Limit-Reset"); reset != "" {
+		if timestamp, err := strconv.ParseInt(reset, 10, 64); err == nil {
+			rlh.Reset = time.Unix(timestamp, 0)
+		}
+	} else if reset := headers.Get("X-RateLimit-Reset"); reset != "" {
+		if timestamp, err := strconv.ParseInt(reset, 10, 64); err == nil {
+			rlh.Reset = time.Unix(timestamp, 0)
+		}
+	}
+	
+	return rlh
 }
