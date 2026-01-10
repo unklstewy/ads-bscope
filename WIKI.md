@@ -92,6 +92,8 @@ Manages flight plan and waypoint data:
 
 #### ADS-B Data Integration
 - **Online Sources**: AirplanesLive API support with rate limiting (6s minimum)
+- **Rate Limit Handling**: HTTP 429 detection with Retry-After header support
+- **Exponential Backoff**: Automatic retry with configurable backoff (1s → 2s → 4s)
 - **Local SDR**: Ready for RTL-SDR/HackRF One integration
 - **Search Radius**: Configurable radius (default 100 NM)
 - **Auto-refresh**: Configurable update intervals (default 10s)
@@ -116,14 +118,16 @@ Manages flight plan and waypoint data:
 
 #### Prediction System (4 Phases Complete)
 - **Phase 1**: NASR waypoint database integration
-- **Phase 2**: FlightAware API integration (10 req/hour limit)
+- **Phase 2**: FlightAware API integration (DISABLED - cost prohibitive)
 - **Phase 3**: Waypoint-based prediction with great circle interpolation
 - **Phase 4**: Airway-based prediction with track matching
 
 **Prediction Cascade**:
-1. **Waypoint Prediction** (95% confidence): Uses filed flight plan
+1. **Waypoint Prediction** (95% confidence): Uses filed flight plan (requires FlightAware)
 2. **Airway Prediction** (90% confidence): Matches to Victor/Jet routes
 3. **Dead Reckoning** (decreasing confidence): Simple velocity extrapolation
+
+**Note**: FlightAware API is currently disabled due to cost. Only airway-based and dead reckoning predictions are active.
 
 #### TUI Viewfinder
 Interactive text-based aircraft tracking display with:
@@ -1235,17 +1239,28 @@ docker-compose up -d
 
 ### Major
 
-#### Issue #1: FlightAware Rate Limiting
+#### Issue #1: FlightAware API Disabled Due to Cost
 **Status**: Active  
-**Description**: FlightAware API limited to 10 requests/hour may not be sufficient for busy airspace.  
-**Impact**: Flight plans may not be available for all aircraft.  
-**Workaround**: Manual flight plan entry (not yet implemented).  
+**Description**: FlightAware API disabled due to cost constraints (500 req/month on free tier insufficient, paid tiers expensive).  
+**Impact**: Waypoint-based prediction not available. System falls back to airway matching or dead reckoning.  
+**Workaround**: Use airway-based prediction for IFR traffic.  
 **Fix Plan**: 
-- Implement caching with longer TTL (4+ hours)
-- Prioritize high-value targets (closest/approaching)
-- Consider alternative flight plan sources
+- Explore free alternative flight plan sources (FAA SWIM, ADS-B Exchange)
+- Implement manual flight plan entry
+- Consider selective enablement for high-priority aircraft
 
-#### Issue #2: No Hardware Telescope Testing
+#### Issue #2: Rate Limit Handling Not Tested
+**Status**: Active  
+**Description**: HTTP 429 rate limit handling implemented but not tested against actual rate limits.  
+**Impact**: Unknown if retry logic works correctly in production.  
+**Workaround**: None needed - graceful degradation.  
+**Fix Plan**: 
+- Temporarily reduce rate limits to trigger 429 responses
+- Verify Retry-After header parsing
+- Test exponential backoff behavior
+- Validate rate limit header extraction
+
+#### Issue #3: No Hardware Telescope Testing
 **Status**: Active  
 **Description**: Telescope control has not been tested with actual Seestar hardware.  
 **Impact**: Unknown if telescope commands work correctly in practice.  
