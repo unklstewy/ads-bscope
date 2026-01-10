@@ -142,6 +142,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		
+		// Clear error on any keypress (but don't quit)
+		if m.err != nil {
+			m.err = nil
+			return m, nil
+		}
+		
 		// Normal mode controls
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -417,8 +423,7 @@ func (m model) View() string {
 		s.WriteString(errStyle.Render(fmt.Sprintf("Error: %v", m.err)))
 		s.WriteString("\n\n")
 		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-		s.WriteString(helpStyle.Render("Press any key to continue..."))
-		m.err = nil // Clear error on next update
+		s.WriteString(helpStyle.Render("Press SPACE to continue (use 3-letter codes: RDU, ATL, JFK, LAX, ORD)..."))
 		return s.String()
 	}
 
