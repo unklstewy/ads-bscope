@@ -3,7 +3,7 @@ package main
 import (
 	"math"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/unklstewy/ads-bscope/pkg/termgl"
 )
 
 // Point represents a 2D point on the screen
@@ -42,68 +42,18 @@ func StereographicProjection(altitude, azimuth float64, centerX, centerY, radius
 	}
 }
 
-// DrawCircle draws a circle on the screen using Bresenham's circle algorithm
-func DrawCircle(screen tcell.Screen, centerX, centerY, radius int, style tcell.Style) {
-	// Bresenham's circle algorithm
-	x := radius
-	y := 0
-	err := 0
-
-	for x >= y {
-		// Draw 8 octants
-		setPixel(screen, centerX+x, centerY+y, style)
-		setPixel(screen, centerX+y, centerY+x, style)
-		setPixel(screen, centerX-y, centerY+x, style)
-		setPixel(screen, centerX-x, centerY+y, style)
-		setPixel(screen, centerX-x, centerY-y, style)
-		setPixel(screen, centerX-y, centerY-x, style)
-		setPixel(screen, centerX+y, centerY-x, style)
-		setPixel(screen, centerX+x, centerY-y, style)
-
-		y++
-		err += 1 + 2*y
-		if 2*(err-x)+1 > 0 {
-			x--
-			err += 1 - 2*x
-		}
-	}
+// DrawCircle draws a smooth circle using TermGL
+func DrawCircle(ctx *termgl.Context, centerX, centerY, radius int, color termgl.Color) {
+	ctx.Circle(centerX, centerY, radius, color, 64) // 64 segments for smooth circle
 }
 
-// DrawLine draws a line between two points using Bresenham's line algorithm
-func DrawLine(screen tcell.Screen, x0, y0, x1, y1 int, style tcell.Style) {
-	dx := abs(x1 - x0)
-	dy := abs(y1 - y0)
-	sx := -1
-	if x0 < x1 {
-		sx = 1
-	}
-	sy := -1
-	if y0 < y1 {
-		sy = 1
-	}
-	err := dx - dy
-
-	for {
-		setPixel(screen, x0, y0, style)
-
-		if x0 == x1 && y0 == y1 {
-			break
-		}
-
-		e2 := 2 * err
-		if e2 > -dy {
-			err -= dy
-			x0 += sx
-		}
-		if e2 < dx {
-			err += dx
-			y0 += sy
-		}
-	}
+// DrawLine draws a smooth line using TermGL
+func DrawLine(ctx *termgl.Context, x0, y0, x1, y1 int, color termgl.Color) {
+	ctx.Line(x0, y0, x1, y1, color)
 }
 
 // DrawRadialLine draws a line from center at a specific azimuth angle
-func DrawRadialLine(screen tcell.Screen, centerX, centerY int, azimuth float64, length int, style tcell.Style) {
+func DrawRadialLine(ctx *termgl.Context, centerX, centerY int, azimuth float64, length int, color termgl.Color) {
 	azRad := azimuth * math.Pi / 180.0
 
 	// Calculate end point
@@ -116,42 +66,31 @@ func DrawRadialLine(screen tcell.Screen, centerX, centerY int, azimuth float64, 
 	x1 := centerX + int(dx)
 	y1 := centerY + int(dy)
 
-	DrawLine(screen, centerX, centerY, x1, y1, style)
+	DrawLine(ctx, centerX, centerY, x1, y1, color)
 }
 
-// DrawText draws text at a specific position
-func DrawText(screen tcell.Screen, x, y int, text string, style tcell.Style) {
-	width, height := screen.Size()
-	for i, ch := range text {
-		if x+i >= width || y >= height || x+i < 0 || y < 0 {
-			continue
-		}
-		screen.SetContent(x+i, y, ch, nil, style)
-	}
+// DrawText draws text at a specific position using TermGL
+func DrawText(ctx *termgl.Context, x, y int, text string, color termgl.Color) {
+	ctx.PutString(x, y, text, color)
 }
 
 // DrawAltitudeRing draws an altitude ring at a specific angle with label
-func DrawAltitudeRing(screen tcell.Screen, centerX, centerY, radius int, altitudeDeg float64, style tcell.Style) {
+func DrawAltitudeRing(ctx *termgl.Context, centerX, centerY, radius int, altitudeDeg float64, color termgl.Color) {
 	// Draw the circle
-	DrawCircle(screen, centerX, centerY, radius, style)
+	DrawCircle(ctx, centerX, centerY, radius, color)
 
 	// Add label at top (North)
-	label := []rune(formatAltitude(altitudeDeg))
+	label := formatAltitude(altitudeDeg)
 	labelX := centerX - len(label)/2
 	labelY := centerY - radius - 1
-	width, height := screen.Size()
 
-	if labelY >= 0 && labelY < height && labelX >= 0 && labelX+len(label) < width {
-		for i, ch := range label {
-			screen.SetContent(labelX+i, labelY, ch, nil, style)
-		}
-	}
+	DrawText(ctx, labelX, labelY, label, color)
 }
 
 // DrawAzimuthLine draws an azimuth line with label
-func DrawAzimuthLine(screen tcell.Screen, centerX, centerY int, azimuthDeg float64, length int, style tcell.Style, label string) {
+func DrawAzimuthLine(ctx *termgl.Context, centerX, centerY int, azimuthDeg float64, length int, color termgl.Color, label string) {
 	// Draw the radial line
-	DrawRadialLine(screen, centerX, centerY, azimuthDeg, length, style)
+	DrawRadialLine(ctx, centerX, centerY, azimuthDeg, length, color)
 
 	// Calculate label position (slightly beyond the line end)
 	azRad := azimuthDeg * math.Pi / 180.0
@@ -162,7 +101,7 @@ func DrawAzimuthLine(screen tcell.Screen, centerX, centerY int, azimuthDeg float
 	labelX := centerX + int(dx) - len(label)/2
 	labelY := centerY + int(dy)
 
-	DrawText(screen, labelX, labelY, label, style)
+	DrawText(ctx, labelX, labelY, label, color)
 }
 
 // formatAltitude formats an altitude angle for display
@@ -175,13 +114,7 @@ func formatAltitude(alt float64) string {
 	return string(rune('0' + int(alt/10))) + string(rune('0' + int(alt)%10)) + "°"
 }
 
-// setPixel sets a single pixel on the screen
-func setPixel(screen tcell.Screen, x, y int, style tcell.Style) {
-	width, height := screen.Size()
-	if x >= 0 && x < width && y >= 0 && y < height {
-		screen.SetContent(x, y, '·', nil, style)
-	}
-}
+// Removed setPixel - TermGL handles pixel-level drawing internally
 
 // abs returns the absolute value of an integer
 func abs(x int) int {
@@ -192,34 +125,28 @@ func abs(x int) int {
 }
 
 // DrawAircraftSymbol draws an aircraft symbol at the given position
-func DrawAircraftSymbol(screen tcell.Screen, x, y int, symbol rune, style tcell.Style) {
-	width, height := screen.Size()
-	if x >= 0 && x < width && y >= 0 && y < height {
-		screen.SetContent(x, y, symbol, nil, style)
-	}
+func DrawAircraftSymbol(ctx *termgl.Context, x, y int, symbol rune, color termgl.Color) {
+	ctx.PutChar(x, y, symbol, color)
 }
 
 // DrawAircraftLabel draws a label next to an aircraft
-func DrawAircraftLabel(screen tcell.Screen, x, y int, label string, style tcell.Style) {
+func DrawAircraftLabel(ctx *termgl.Context, x, y int, label string, color termgl.Color) {
 	// Draw label to the right of the aircraft position
-	DrawText(screen, x+2, y, label, style)
+	DrawText(ctx, x+2, y, label, color)
 }
 
 // DrawHorizonLine draws a bold horizon line at the edge
-func DrawHorizonLine(screen tcell.Screen, centerX, centerY, radius int, style tcell.Style) {
+func DrawHorizonLine(ctx *termgl.Context, centerX, centerY, radius int, color termgl.Color) {
 	// Draw a thicker circle for horizon (draw multiple circles with small offsets)
-	DrawCircle(screen, centerX, centerY, radius, style)
-	DrawCircle(screen, centerX, centerY, radius-1, style)
+	DrawCircle(ctx, centerX, centerY, radius, color)
+	DrawCircle(ctx, centerX, centerY, radius-1, color)
 }
 
 // DrawZenithMarker draws a marker at the zenith (center)
-func DrawZenithMarker(screen tcell.Screen, centerX, centerY int, style tcell.Style) {
-	// Draw a small cross at zenith
-	screen.SetContent(centerX, centerY, '+', nil, style)
-	screen.SetContent(centerX-1, centerY, '─', nil, style)
-	screen.SetContent(centerX+1, centerY, '─', nil, style)
-	screen.SetContent(centerX, centerY-1, '│', nil, style)
-	screen.SetContent(centerX, centerY+1, '│', nil, style)
+func DrawZenithMarker(ctx *termgl.Context, centerX, centerY int, color termgl.Color) {
+	// Draw a small cross at zenith using lines
+	ctx.Line(centerX-2, centerY, centerX+2, centerY, color)
+	ctx.Line(centerX, centerY-2, centerX, centerY+2, color)
 }
 
 // CalculateSkyViewBounds calculates the optimal bounds for the sky view
@@ -258,14 +185,14 @@ func CalculateSkyViewBounds(width, height int) (int, int, int) {
 }
 
 // DrawVelocityVector draws a velocity vector (arrow) for an aircraft
-func DrawVelocityVector(screen tcell.Screen, x, y int, heading float64, speed float64, style tcell.Style) {
+func DrawVelocityVector(ctx *termgl.Context, x, y int, heading float64, speed float64, color termgl.Color) {
 	// Vector length based on speed (normalized)
 	length := int(speed/150.0) + 1
-	if length > 4 {
-		length = 4
+	if length > 6 {
+		length = 6
 	}
-	if length < 1 {
-		length = 1
+	if length < 2 {
+		length = 2
 	}
 
 	// Convert heading to screen coordinates
@@ -273,18 +200,13 @@ func DrawVelocityVector(screen tcell.Screen, x, y int, heading float64, speed fl
 	headingRad := heading * math.Pi / 180.0
 	const aspectRatio = 0.5
 
-	for i := 1; i <= length; i++ {
-		dx := int(float64(i) * math.Sin(headingRad) * aspectRatio)
-		dy := -int(float64(i) * math.Cos(headingRad))
+	dx := int(float64(length) * math.Sin(headingRad) * aspectRatio)
+	dy := -int(float64(length) * math.Cos(headingRad))
 
-		nx, ny := x+dx, y+dy
-		width, height := screen.Size()
-		if nx >= 0 && nx < width && ny >= 0 && ny < height {
-			if i == length {
-				screen.SetContent(nx, ny, '→', nil, style)
-			} else {
-				screen.SetContent(nx, ny, '-', nil, style)
-			}
-		}
-	}
+	// Draw line for velocity vector
+	ctx.Line(x, y, x+dx, y+dy, color)
+
+	// Draw arrowhead at end
+	arrowX, arrowY := x+dx, y+dy
+	ctx.PutChar(arrowX, arrowY, '→', color)
 }

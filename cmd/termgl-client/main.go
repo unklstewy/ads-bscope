@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/unklstewy/ads-bscope/internal/db"
 	"github.com/unklstewy/ads-bscope/pkg/config"
@@ -63,7 +65,7 @@ func main() {
 	aircraftRepo := db.NewAircraftRepository(database, observer)
 	flightPlanRepo := db.NewFlightPlanRepository(database)
 
-	// Create and run the application
+	// Create the application
 	app := NewApp(&AppConfig{
 		Config:             cfg,
 		ConfigPath:         *configPath,
@@ -73,9 +75,22 @@ func main() {
 		Observer:           observer,
 	})
 
-	if err := app.Run(); err != nil {
-		log.Fatalf("Application error: %v", err)
-	}
+	// Setup signal handler for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	
+	// Run app in a goroutine and wait for signals
+	go func() {
+		if err := app.Run(); err != nil {
+			log.Printf("Application error: %v", err)
+		}
+	}()
+
+	// Wait for signal
+	<-sigChan
+	
+	// Graceful shutdown
+	app.Stop()
 }
 
 // printHelp prints usage information

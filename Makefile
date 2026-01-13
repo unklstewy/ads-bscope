@@ -117,8 +117,8 @@ build-verify-flightplans: $(BINARY_DIR)
 	@echo "✓ Built: $(VERIFY_FLIGHTPLANS_BIN)"
 
 build-termgl-client: $(BINARY_DIR)
-	@echo "Building TermGL client..."
-	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(TERMGL_CLIENT_BIN) ./cmd/termgl-client
+	@echo "Building TermGL client (with CGo)..."
+	CGO_ENABLED=1 $(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(TERMGL_CLIENT_BIN) ./cmd/termgl-client
 	@echo "✓ Built: $(TERMGL_CLIENT_BIN)"
 
 build-all: build-collector build-fetch-flightplans build-verify-nasr build-verify-flightplans build-termgl-client

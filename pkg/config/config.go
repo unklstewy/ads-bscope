@@ -108,6 +108,41 @@ type TelescopeConfig struct {
 	// Terrestrial mode: 0° or negative for below-horizon targets
 	// Set to 0 for auto-detection based on imaging_mode
 	MinAltitude float64 `json:"min_altitude"`
+
+	// FocuserDeviceNumber is the Alpaca device number for the focuser (typically 0)
+	FocuserDeviceNumber int `json:"focuser_device_number"`
+
+	// InfinityFocusPosition is the focuser position for infinity focus (steps)
+	// Seestar S30/S50: typically 1700-1850 steps
+	// This is used for aircraft/terrestrial tracking
+	InfinityFocusPosition int `json:"infinity_focus_position"`
+
+	// AutoFocusOnStartup determines if focuser should auto-move to infinity on startup
+	AutoFocusOnStartup bool `json:"auto_focus_on_startup"`
+
+	// FilterWheelDeviceNumber is the Alpaca device number for the filter wheel (typically 0)
+	FilterWheelDeviceNumber int `json:"filterwheel_device_number"`
+
+	// SolarSafetyEnabled enables solar proximity protection
+	SolarSafetyEnabled bool `json:"solar_safety_enabled"`
+
+	// SolarFilterInstalled indicates if physical solar filter is attached
+	// MUST be true to intentionally track near the sun (<20°)
+	SolarFilterInstalled bool `json:"solar_filter_installed"`
+
+	// MinSolarSeparation is the minimum allowed angular separation from sun (degrees)
+	// Default: 20° (CRITICAL protection)
+	// With solar filter: can be reduced to 2°
+	MinSolarSeparation float64 `json:"min_solar_separation"`
+
+	// AutoDarkFilterOnSolarProximity automatically engages dark filter when approaching sun
+	AutoDarkFilterOnSolarProximity bool `json:"auto_dark_filter_on_solar_proximity"`
+
+	// SwitchDeviceNumber is the Alpaca device number for the switch (typically 0)
+	SwitchDeviceNumber int `json:"switch_device_number"`
+
+	// EnableDewHeaterOnStartup automatically enables dew heater on startup
+	EnableDewHeaterOnStartup bool `json:"enable_dew_heater_on_startup"`
 }
 
 // CollectionRegion represents a geographic region for aircraft data collection.

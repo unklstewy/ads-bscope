@@ -18,16 +18,26 @@
     "max_idle_conns": 5
   },
   "telescope": {
-    "base_url": "http://localhost:11111",
+    "base_url": "http://localhost:32323",
     "device_number": 0,
-    "mount_type": "equatorial",
-    "slew_rate": 1,
+    "mount_type": "altaz",
+    "slew_rate": 6.0,
     "tracking_enabled": true,
-    "model": "seestar-s50",
+    "model": "seestar-s30",
     "imaging_mode": "terrestrial",
     "supports_meridian_flip": false,
-    "max_altitude": 0,
-    "min_altitude": 0
+    "max_altitude": 80.0,
+    "min_altitude": 20.0,
+    "focuser_device_number": 0,
+    "infinity_focus_position": 1775,
+    "auto_focus_on_startup": true,
+    "filterwheel_device_number": 0,
+    "solar_safety_enabled": true,
+    "solar_filter_installed": false,
+    "min_solar_separation": 20.0,
+    "auto_dark_filter_on_solar_proximity": true,
+    "switch_device_number": 0,
+    "enable_dew_heater_on_startup": false
   },
   "adsb": {
     "sources": [

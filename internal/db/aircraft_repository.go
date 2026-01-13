@@ -289,6 +289,39 @@ func (r *AircraftRepository) UpdateTrackableStatus(
 	return err
 }
 
+// GetVisibleAircraft returns all currently visible aircraft.
+// This includes aircraft that may not be trackable by the telescope.
+func (r *AircraftRepository) GetVisibleAircraft(ctx context.Context) ([]adsb.Aircraft, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT icao, callsign, latitude, longitude, altitude_ft,
+		        ground_speed_kts, track_deg, vertical_rate_fpm, last_seen
+		 FROM aircraft
+		 WHERE is_visible = TRUE
+		 ORDER BY range_nm ASC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var aircraft []adsb.Aircraft
+	for rows.Next() {
+		var ac adsb.Aircraft
+		err := rows.Scan(
+			&ac.ICAO, &ac.Callsign,
+			&ac.Latitude, &ac.Longitude, &ac.Altitude,
+			&ac.GroundSpeed, &ac.Track, &ac.VerticalRate,
+			&ac.LastSeen,
+		)
+		if err != nil {
+			return nil, err
+		}
+		aircraft = append(aircraft, ac)
+	}
+
+	return aircraft, rows.Err()
+}
+
 // GetTrackableAircraft returns all currently trackable aircraft.
 // This uses the observer location configured in the repository.
 func (r *AircraftRepository) GetTrackableAircraft(ctx context.Context) ([]adsb.Aircraft, error) {

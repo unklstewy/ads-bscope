@@ -258,8 +258,14 @@ func (c *Collector) update(ctx context.Context) {
 		// Fetch aircraft for this region
 		aircraft, err := c.fetchRegion(ctx, region)
 		if err != nil {
-			log.Printf("Error fetching region %s: %v", region.Name, err)
+			log.Printf("✗ Failed to fetch region %s after retries: %v (will retry in next update cycle)", region.Name, err)
 			continue
+		}
+		
+		if len(aircraft) == 0 {
+			log.Printf("  ℹ Region %s: no aircraft found", region.Name)
+		} else {
+			log.Printf("  ✓ Region %s: fetched %d aircraft", region.Name, len(aircraft))
 		}
 
 		// Update region stats
@@ -322,13 +328,26 @@ func (c *Collector) update(ctx context.Context) {
 		now.Format("15:04:05"), c.totalUpdates, regionCount, len(allAircraft), stored)
 }
 
-// fetchRegion fetches aircraft from a single collection region.
+// fetchRegion fetches aircraft from a single collection region with exponential backoff retry.
 func (c *Collector) fetchRegion(ctx context.Context, region config.CollectionRegion) ([]adsb.Aircraft, error) {
-	aircraft, err := c.adsbClient.GetAircraft(
-		region.Latitude,
-		region.Longitude,
-		region.RadiusNM,
-	)
+	// Configure retry with exponential backoff
+	// Max 5 attempts with delays: 2s, 4s, 8s, 16s, 32s
+	retryConfig := adsb.RetryConfig{
+		MaxRetries:        4, // 5 total attempts (1 initial + 4 retries)
+		InitialDelay:      2 * time.Second,
+		MaxDelay:          32 * time.Second,
+		Multiplier:        2.0, // Exponential: 2s, 4s, 8s, 16s, 32s
+		RespectRetryAfter: true, // Respect API's Retry-After header
+	}
+
+	// Fetch with retry
+	aircraft, err := adsb.RetryWithBackoffResult(ctx, retryConfig, func() ([]adsb.Aircraft, error) {
+		return c.adsbClient.GetAircraft(
+			region.Latitude,
+			region.Longitude,
+			region.RadiusNM,
+		)
+	})
 	if err != nil {
 		return nil, err
 	}
