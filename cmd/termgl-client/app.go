@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -64,6 +63,8 @@ type App struct {
 	showTrails    bool
 	showConstell  bool
 	zoom          float64
+	minAlt        float64
+	maxAlt        float64
 
 	// Synchronization
 	mu          sync.RWMutex
@@ -88,6 +89,9 @@ type AircraftView struct {
 
 // NewApp creates a new application instance
 func NewApp(cfg *AppConfig) *App {
+	// Get altitude limits from config
+	minAlt, maxAlt := cfg.Config.Telescope.GetAltitudeLimits()
+
 	app := &App{
 		config:         cfg.Config,
 		configPath:     cfg.ConfigPath,
@@ -101,6 +105,8 @@ func NewApp(cfg *AppConfig) *App {
 		showTrails:     false,
 		showConstell:   false,
 		zoom:           1.0,
+		minAlt:         minAlt,
+		maxAlt:         maxAlt,
 		currentView:    ViewModeSky,
 		stopChan:       make(chan struct{}),
 	}
@@ -128,13 +134,9 @@ func (a *App) setupUI() {
 
 // createMainView creates the main view (sky or radar)
 func (a *App) createMainView() {
-	// Create a text view for displaying aircraft list (temporary for Phase 2)
-	box := tview.NewTextView().
-		SetDynamicColors(true).
-		SetScrollable(true)
-	box.SetBorder(true).SetTitle(" Sky View - Aircraft List ")
-
-	a.mainView = box
+	// Create the sky view with geometric rendering
+	skyView := NewSkyView(a)
+	a.mainView = skyView
 }
 
 // createTelemetryPanel creates the telemetry info panel
@@ -597,93 +599,7 @@ func (a *App) fetchAircraftData() {
 	// Update UI
 	a.tviewApp.QueueUpdateDraw(func() {
 		a.updateTelemetry()
-		a.updateMainView()
 	})
-}
-
-// updateMainView updates the main view content
-func (a *App) updateMainView() {
-	a.mu.RLock()
-	defer a.mu.RUnlock()
-
-	// Get the text view from mainView
-	textView, ok := a.mainView.(*tview.TextView)
-	if !ok {
-		return
-	}
-
-	var content string
-
-	if len(a.aircraft) == 0 {
-		content = "\n[gray]No aircraft visible[-]\n\n"
-		content += "[gray]Waiting for aircraft data...[-]"
-		textView.SetText(content)
-		return
-	}
-
-	// Header
-	content = fmt.Sprintf("[yellow]%d Aircraft Visible[-]\n\n", len(a.aircraft))
-
-	// Column headers
-	content += "[cyan]" +
-		"  CALLSIGN    ICAO    ALT(ft)  SPD(kt)  HDG   AZIMUTH  ALTITUDE  AGE" +
-		"[-]\n"
-	content += "[gray]" + strings.Repeat("─", 78) + "[-]\n"
-
-	// Aircraft list
-	for i, ac := range a.aircraft {
-		var marker string
-		var color string
-
-		// Determine marker and color
-		if ac.Tracking {
-			marker = "◉"
-			color = "green"
-		} else if ac.Selected {
-			marker = "●"
-			color = "yellow"
-		} else {
-			marker = "○"
-			color = "white"
-		}
-
-		// Format callsign with padding
-		callsign := ac.Callsign
-		if callsign == "" {
-			callsign = "---"
-		}
-
-		// Format line
-		line := fmt.Sprintf(
-			"[%s]%s %-10s  %-6s  %6.0f   %5.0f    %3.0f   %6.1f°   %5.1f°    %.1fs[-]\n",
-			color,
-			marker,
-			callsign,
-			ac.ICAO,
-			ac.Altitude,
-			ac.Speed,
-			ac.Heading,
-			ac.HorizCoord.Azimuth,
-			ac.HorizCoord.Altitude,
-			ac.Age.Seconds(),
-		)
-
-		content += line
-
-		// Highlight selected aircraft
-		if i == a.selectedIndex {
-			// Add extra spacing after selected
-			if i < len(a.aircraft)-1 {
-				content += "\n"
-			}
-		}
-	}
-
-	// Footer
-	content += "\n[gray]" + strings.Repeat("─", 78) + "[-]\n"
-	content += fmt.Sprintf("[gray]Use ↑/↓ to select, ENTER to track, SPACE to stop[-]")
-
-	textView.SetText(content)
 }
 
 // Stop stops the application

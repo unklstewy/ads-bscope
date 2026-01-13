@@ -39,35 +39,35 @@
         "rate_limit_seconds": 10.5
       }
     ],
-    "search_radius_nm": 100,
+    "search_radius_nm": 30,
     "max_collection_radius_nm": 200,
     "collection_regions": [
       {
         "name": "Charlotte Metro",
         "latitude": 35.1871,
         "longitude": -80.9218,
-        "radius_nm": 200,
+        "radius_nm": 30,
         "enabled": true
       },
       {
         "name": "Atlanta Region",
         "latitude": 33.6407,
         "longitude": -84.4277,
-        "radius_nm": 150,
+        "radius_nm": 30,
         "enabled": false
       },
       {
         "name": "New York Region",
         "latitude": 40.6413,
         "longitude": -73.7781,
-        "radius_nm": 100,
+        "radius_nm": 30,
         "enabled": false
       },
       {
         "name": "Joplin Missouri",
         "latitude": 37.15772906575299,
         "longitude": -94.502,
-        "radius_nm": 50,
+        "radius_nm": 30,
         "enabled": true
       }
     ],
