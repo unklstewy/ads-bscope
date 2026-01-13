@@ -418,6 +418,9 @@ func (c *Config) applyEnvironmentOverrides() {
 	if port := os.Getenv("ADS_BSCOPE_PORT"); port != "" {
 		c.Server.Port = port
 	}
+	if dbHost := os.Getenv("ADS_BSCOPE_DB_HOST"); dbHost != "" {
+		c.Database.Host = dbHost
+	}
 	if dbPassword := os.Getenv("ADS_BSCOPE_DB_PASSWORD"); dbPassword != "" {
 		c.Database.Password = dbPassword
 	}

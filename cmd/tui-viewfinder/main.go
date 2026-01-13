@@ -32,6 +32,14 @@ type trackTrail struct {
 	maxLength int
 }
 
+// ViewMode represents the current view mode
+type ViewMode int
+
+const (
+	ViewSky ViewMode = iota
+	ViewConfigMenu
+)
+
 type model struct {
 	cfg        *config.Config
 	database   *db.DB
@@ -59,6 +67,11 @@ type model struct {
 	inputBuffer  string
 	width        int     // Terminal width
 	height       int     // Terminal height
+	
+	// View mode and config menu
+	viewMode     ViewMode
+	configMenu   *configMenuModel
+	configPath   string
 }
 
 type aircraftView struct {
@@ -90,9 +103,77 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Update terminal dimensions
 		m.width = msg.Width
 		m.height = msg.Height
+		// Also update config menu if it exists
+		if m.configMenu != nil {
+			m.configMenu.width = msg.Width
+			m.configMenu.height = msg.Height
+		}
+		return m, nil
+	
+	case configSaveMsg:
+		// Handle config save result
+		if msg.err != nil {
+			m.configMenu.message = fmt.Sprintf("Save failed: %v", msg.err)
+			m.configMenu.messageIsError = true
+		} else {
+			m.configMenu.message = "✓ Configuration saved"
+			m.configMenu.messageIsError = false
+			m.configMenu.dirty = false
+			// Reload config in main model
+			m.cfg = m.configMenu.cfg
+			// Update observer if changed
+			m.observer = coordinates.Observer{
+				Location: coordinates.Geographic{
+					Latitude:  m.cfg.Observer.Latitude,
+					Longitude: m.cfg.Observer.Longitude,
+					Altitude:  m.cfg.Observer.Elevation,
+				},
+				Timezone: m.cfg.Observer.TimeZone,
+			}
+			// Update repository with new observer
+			m.repo = db.NewAircraftRepository(m.database, m.observer)
+			// Update altitude limits
+			m.minAlt, m.maxAlt = m.cfg.Telescope.GetAltitudeLimits()
+		}
+		return m, nil
+	
+	case configReloadMsg:
+		// Handle config reload result
+		if msg.err != nil {
+			m.configMenu.message = fmt.Sprintf("Reload failed: %v", msg.err)
+			m.configMenu.messageIsError = true
+		} else {
+			m.configMenu.cfg = msg.cfg
+			m.configMenu.originalCfg = msg.cfg
+			m.configMenu.dirty = false
+			m.configMenu.message = "✓ Configuration reloaded"
+			m.configMenu.messageIsError = false
+		}
 		return m, nil
 	
 	case tea.KeyMsg:
+		// If in config menu mode, delegate to config menu
+		if m.viewMode == ViewConfigMenu {
+			// Pass ALL keys to config menu first
+			if m.configMenu != nil {
+				updatedMenu, cmd := m.configMenu.Update(msg)
+				// Check if config menu returned Quit - that means exit to main view
+				if cmd != nil {
+					// Check if it's a quit command by testing the command
+					if _, isQuit := cmd().(tea.QuitMsg); isQuit {
+						m.viewMode = ViewSky
+						m.configMenu = nil
+						return m, nil
+					}
+				}
+				if updatedMenuModel, ok := updatedMenu.(configMenuModel); ok {
+					*m.configMenu = updatedMenuModel
+				}
+				return m, cmd
+			}
+			return m, nil
+		}
+		
 		// Handle input mode (airport code or radius entry)
 		if m.inputMode != "" {
 			switch msg.String() {
@@ -160,6 +241,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
+		case "c":
+			// Open config menu
+			m.viewMode = ViewConfigMenu
+			menu := newConfigMenuModel(m.cfg, m.configPath)
+			m.configMenu = &menu
+			return m, nil
 		case "r":
 			// Toggle radar mode or start radar setup
 			if m.radarMode {
@@ -405,6 +492,11 @@ func (m *model) updateAircraft() {
 }
 
 func (m model) View() string {
+	// If in config menu mode, render config menu
+	if m.viewMode == ViewConfigMenu && m.configMenu != nil {
+		return m.configMenu.View()
+	}
+	
 	var s strings.Builder
 
 	// Header
@@ -517,7 +609,7 @@ func (m model) View() string {
 
 		// Controls
 		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-		s.WriteString(helpStyle.Render("↑/↓: Select  ENTER/SPACE: Track  S: Stop  R: Radar  +/-: Zoom  0: Reset  Q: Quit"))
+		s.WriteString(helpStyle.Render("↑/↓: Select  ENTER/SPACE: Track  S: Stop  C: Config  R: Radar  +/-: Zoom  0: Reset  Q: Quit"))
 		s.WriteString("\n")
 	}
 
@@ -873,8 +965,11 @@ func (m model) renderLegend() string {
 }
 
 func main() {
+	// Config path
+	configPath := "configs/config.json"
+	
 	// Load config
-	cfg, err := config.Load("configs/config.json")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
@@ -919,6 +1014,8 @@ func main() {
 		radarRadius: 100.0, // Default radar radius 100 NM
 		width:       80,  // Default width (will be updated on first render)
 		height:      30,  // Default height (will be updated on first render)
+		viewMode:    ViewSky, // Start in sky view mode
+		configPath:  configPath,
 	}
 
 	// Initial data load

@@ -62,6 +62,18 @@ func main() {
 		nasrDir: *nasrDir,
 	}
 
+	// Import airports first (they may be referenced by waypoints)
+	log.Println("\n===========================================")
+	log.Println("Importing Airports")
+	log.Println("===========================================")
+	
+	aptCount, err := importer.ImportAirports(ctx)
+	if err != nil {
+		log.Printf("Warning: Failed to import airports: %v", err)
+	} else {
+		log.Printf("✓ Imported %d airports", aptCount)
+	}
+
 	// Import waypoints
 	log.Println("\n===========================================")
 	log.Println("Importing Waypoints")
@@ -97,6 +109,7 @@ func main() {
 	log.Println("\n===========================================")
 	log.Println("Import Complete")
 	log.Println("===========================================")
+	log.Printf("Total airports: %d", aptCount)
 	log.Printf("Total waypoints: %d", fixCount+navCount)
 	log.Printf("Total airway segments: %d", awyCount)
 }
@@ -105,6 +118,122 @@ func main() {
 type NASRImporter struct {
 	db      *db.DB
 	nasrDir string
+}
+
+// ImportAirports imports airports from APT_BASE.csv (OurAirports format).
+// Download from: https://ourairports.com/data/
+// Or use FAA APT.txt with different parsing.
+func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
+	filePath := fmt.Sprintf("%s/airports.csv", i.nasrDir)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open airports.csv: %w (download from https://ourairports.com/data/)", err)
+	}
+	defer file.Close()
+
+	count := 0
+	scanner := bufio.NewScanner(file)
+	
+	// Skip header line
+	if scanner.Scan() {
+		scanner.Text()
+	}
+	
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := parseCSVLine(line)
+		
+		// OurAirports CSV format:
+		// 0: id, 1: ident, 2: type, 3: name, 4: latitude_deg, 5: longitude_deg,
+		// 6: elevation_ft, 7: continent, 8: iso_country, 9: iso_region, ...
+		if len(fields) < 10 {
+			continue
+		}
+		
+		ident := strings.TrimSpace(fields[1])
+		apt_type := strings.TrimSpace(fields[2])
+		name := strings.TrimSpace(fields[3])
+		latStr := strings.TrimSpace(fields[4])
+		lonStr := strings.TrimSpace(fields[5])
+		country := strings.TrimSpace(fields[8])
+		region := strings.TrimSpace(fields[9])
+		
+		// Filter: only import airports (not heliports, seaplane bases, etc.)
+		// and prioritize US airports
+		if apt_type != "small_airport" && apt_type != "medium_airport" && 
+		   apt_type != "large_airport" {
+			continue
+		}
+		
+		// Parse coordinates
+		lat, err := strconv.ParseFloat(latStr, 64)
+		if err != nil {
+			continue
+		}
+		lon, err := strconv.ParseFloat(lonStr, 64)
+		if err != nil {
+			continue
+		}
+		
+		// Extract region code (e.g., "US-NC" -> "NC")
+		regionCode := region
+		if len(region) > 3 && region[2] == '-' {
+			regionCode = region[3:]
+		} else if len(region) > 2 {
+			regionCode = region[:2]
+		}
+		
+		// Insert airport as waypoint with type "airport"
+		_, err = i.db.ExecContext(ctx,
+			`INSERT INTO waypoints (identifier, name, latitude, longitude, type, region)
+			 VALUES ($1, $2, $3, $4, $5, $6)
+			 ON CONFLICT (identifier, region) DO UPDATE SET
+			 name = EXCLUDED.name,
+			 latitude = EXCLUDED.latitude,
+			 longitude = EXCLUDED.longitude`,
+			ident, name, lat, lon, "airport", regionCode,
+		)
+		if err != nil {
+			log.Printf("Warning: Failed to insert airport %s: %v", ident, err)
+			continue
+		}
+		
+		count++
+		if count%500 == 0 {
+			log.Printf("  Imported %d airports...", count)
+		}
+	}
+	
+	return count, scanner.Err()
+}
+
+// parseCSVLine parses a CSV line handling quoted fields.
+func parseCSVLine(line string) []string {
+	var fields []string
+	var current strings.Builder
+	inQuote := false
+	
+	for i := 0; i < len(line); i++ {
+		ch := line[i]
+		
+		switch ch {
+		case '"':
+			inQuote = !inQuote
+		case ',':
+			if inQuote {
+				current.WriteByte(ch)
+			} else {
+				fields = append(fields, current.String())
+				current.Reset()
+			}
+		default:
+			current.WriteByte(ch)
+		}
+	}
+	
+	// Add last field
+	fields = append(fields, current.String())
+	return fields
 }
 
 // ImportFixes imports navigation fixes from FIX.txt.

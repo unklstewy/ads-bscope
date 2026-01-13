@@ -36,6 +36,8 @@ services:
         condition: service_healthy
     environment:
       # Override configuration via environment variables
+      # Use Docker network hostname instead of localhost
+      ADS_BSCOPE_DB_HOST: adsbscope-db
       ADS_BSCOPE_DB_PASSWORD: ${DB_PASSWORD:-changeme}
       CONFIG_PATH: /app/configs/config.json
     ports:
