@@ -169,6 +169,60 @@ func (r *FlightPlanRepository) GetWaypointsByIdentifier(ctx context.Context, ide
 	return waypoints, rows.Err()
 }
 
+// FindAirportsNear finds airports within a given radius of a position.
+// This is useful for selecting airports to center radar views on.
+//
+// Parameters:
+//   - lat, lon: Center position
+//   - radiusNM: Search radius in nautical miles
+//   - limit: Maximum number of airports to return (0 = no limit)
+//
+// Returns: List of airports sorted by distance (nearest first)
+func (r *FlightPlanRepository) FindAirportsNear(
+	ctx context.Context,
+	lat, lon float64,
+	radiusNM float64,
+	limit int,
+) ([]Waypoint, error) {
+	// Convert radius to approximate lat/lon delta
+	// 1 degree latitude ≈ 60 NM
+	latDelta := radiusNM / 60.0
+	lonDelta := radiusNM / 60.0
+
+	// Build query
+	query := `
+		SELECT id, identifier, COALESCE(name, ''), latitude, longitude, type, COALESCE(region, '')
+		FROM waypoints
+		WHERE type = 'airport'
+		  AND latitude BETWEEN $1 - $3 AND $1 + $3
+		  AND longitude BETWEEN $2 - $4 AND $2 + $4
+		ORDER BY 
+			-- Sort by approximate distance (Manhattan distance)
+			ABS(latitude - $1) + ABS(longitude - $2)
+	`
+
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := r.db.QueryContext(ctx, query, lat, lon, latDelta, lonDelta)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query airports: %w", err)
+	}
+	defer rows.Close()
+
+	var airports []Waypoint
+	for rows.Next() {
+		var wp Waypoint
+		if err := rows.Scan(&wp.ID, &wp.Identifier, &wp.Name, &wp.Latitude, &wp.Longitude, &wp.Type, &wp.Region); err != nil {
+			return nil, fmt.Errorf("failed to scan airport: %w", err)
+		}
+		airports = append(airports, wp)
+	}
+
+	return airports, rows.Err()
+}
+
 // ParseAndStoreRoute parses a route string and stores the waypoint sequence.
 //
 // Route format examples:
@@ -190,16 +244,16 @@ func (r *FlightPlanRepository) ParseAndStoreRoute(ctx context.Context, flightPla
 
 	// Clean up route string
 	routeString = strings.TrimSpace(routeString)
-	
+
 	// Replace ".." with single space for easier parsing
 	routeString = strings.ReplaceAll(routeString, "..", " ")
-	
+
 	// Replace single dots with spaces
 	routeString = strings.ReplaceAll(routeString, ".", " ")
-	
+
 	// Split into tokens
 	tokens := strings.Fields(routeString)
-	
+
 	// Delete existing route waypoints for this flight plan
 	_, err := r.db.ExecContext(ctx,
 		`DELETE FROM flight_plan_routes WHERE flight_plan_id = $1`,
@@ -214,7 +268,7 @@ func (r *FlightPlanRepository) ParseAndStoreRoute(ctx context.Context, flightPla
 
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
-		
+
 		// Skip "DCT" (direct routing indicator)
 		if token == "DCT" {
 			continue
@@ -268,12 +322,12 @@ func isAirway(token string) bool {
 	if len(token) < 2 {
 		return false
 	}
-	
+
 	first := token[0]
-	return (first == 'J' || first == 'V' || first == 'Q' || 
-	        first == 'T' || first == 'A' || first == 'B' || 
-	        first == 'G' || first == 'R') && 
-	       len(token) <= 5 // Airways are typically 2-5 chars
+	return (first == 'J' || first == 'V' || first == 'Q' ||
+		first == 'T' || first == 'A' || first == 'B' ||
+		first == 'G' || first == 'R') &&
+		len(token) <= 5 // Airways are typically 2-5 chars
 }
 
 // GetFlightPlanRoute retrieves the resolved waypoint sequence for a flight plan.
@@ -298,7 +352,7 @@ func (r *FlightPlanRepository) GetFlightPlanRoute(ctx context.Context, flightPla
 	for rows.Next() {
 		var route FlightPlanRoute
 		var eta sql.NullTime
-		
+
 		if err := rows.Scan(
 			&route.ID, &route.FlightPlanID, &route.Sequence, &route.WaypointID,
 			&route.WaypointName, &route.Latitude, &route.Longitude, &eta, &route.Passed,
@@ -368,15 +422,15 @@ func (r *FlightPlanRepository) GetNextWaypoint(ctx context.Context, flightPlanID
 
 // AirwaySegment represents a segment of an airway between two waypoints.
 type AirwaySegment struct {
-	AirwayID       string
-	AirwayType     string  // victor, jet, rnav
-	Sequence       int
-	FromWaypoint   Waypoint
-	ToWaypoint     Waypoint
-	MinAltitude    int
-	MaxAltitude    int
-	Bearing        float64 // Bearing from FromWaypoint to ToWaypoint
-	DistanceNM     float64 // Distance in nautical miles
+	AirwayID     string
+	AirwayType   string // victor, jet, rnav
+	Sequence     int
+	FromWaypoint Waypoint
+	ToWaypoint   Waypoint
+	MinAltitude  int
+	MaxAltitude  int
+	Bearing      float64 // Bearing from FromWaypoint to ToWaypoint
+	DistanceNM   float64 // Distance in nautical miles
 }
 
 // FindNearbyAirways finds airways within a given radius of a position.

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -61,7 +60,7 @@ func main() {
 	log.Println("===========================================")
 	log.Printf("API Rate Limit: %d requests/hour\n", cfg.FlightAware.RequestsPerHour)
 	log.Printf("Fetch Interval: %d minutes\n", cfg.FlightAware.FetchIntervalMinutes)
-	log.Println("===========================================\n")
+	log.Println("===========================================")
 
 	ctx := context.Background()
 	ticker := time.NewTicker(time.Duration(cfg.FlightAware.FetchIntervalMinutes) * time.Minute)
@@ -138,7 +137,7 @@ func fetchFlightPlans(
 		if err != nil {
 			log.Printf("Error checking existing plan for %s: %v", ac.Callsign, err)
 		}
-		
+
 		if existing != nil && time.Since(existing.LastUpdated) < time.Hour {
 			log.Printf("  ✓ %s (%s) - Using cached flight plan", ac.Callsign, ac.ICAO)
 			continue
@@ -146,7 +145,7 @@ func fetchFlightPlans(
 
 		// Fetch from FlightAware
 		log.Printf("  → Fetching flight plan for %s (%s)...", ac.Callsign, ac.ICAO)
-		
+
 		flightPlan, err := faClient.GetFlightPlanByCallsign(ctx, ac.Callsign)
 		if err != nil {
 			log.Printf("    ✗ Error: %v", err)
@@ -204,7 +203,7 @@ func fetchFlightPlans(
 	log.Printf("  Success: %d\n", successCount)
 	log.Printf("  Not Found: %d\n", notFoundCount)
 	log.Printf("  Errors: %d\n", errorCount)
-	log.Println("===========================================\n")
+	log.Println("===========================================")
 
 	return nil
 }

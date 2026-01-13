@@ -20,7 +20,7 @@
   "telescope": {
     "base_url": "http://localhost:11111",
     "device_number": 0,
-    "mount_type": "altaz",
+    "mount_type": "equatorial",
     "slew_rate": 1,
     "tracking_enabled": true,
     "model": "seestar-s50",
@@ -75,10 +75,10 @@
   },
   "observer": {
     "name": "CLT Primary Observatory",
-    "latitude": 35.1871,
-    "longitude": -80.9218,
-    "elevation": 230,
-    "timezone": "America/New_York"
+    "latitude": 37.1401,
+    "longitude": -94.4912,
+    "elevation": 981,
+    "timezone": "America/Chicago"
   },
   "flightaware": {
     "api_key": "no-such-api-key-here",

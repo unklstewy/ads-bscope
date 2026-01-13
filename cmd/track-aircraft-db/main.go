@@ -37,7 +37,7 @@ func main() {
 	log.Printf("Configuration loaded from: %s", *configPath)
 	log.Printf("Observer location: %.4f°N, %.4f°W, %.0fm MSL",
 		cfg.Observer.Latitude, cfg.Observer.Longitude, cfg.Observer.Elevation)
-	log.Printf("Telescope: %s (%s mount, %s imaging)", 
+	log.Printf("Telescope: %s (%s mount, %s imaging)",
 		cfg.Telescope.Model, cfg.Telescope.MountType, cfg.Telescope.ImagingMode)
 
 	// Get altitude limits
@@ -102,7 +102,7 @@ func main() {
 		} else {
 			// Use first aircraft
 			targetICAO = trackable[0].ICAO
-			log.Printf("\n🎯 Auto-selecting first aircraft: %s (%s)", 
+			log.Printf("\n🎯 Auto-selecting first aircraft: %s (%s)",
 				trackable[0].Callsign, trackable[0].ICAO)
 			log.Println("   (Use --random flag to select randomly, or --icao to specify)")
 		}
@@ -115,7 +115,7 @@ func main() {
 	if !*dryRun {
 		telescopeClient = alpaca.NewClient(cfg.Telescope)
 		log.Printf("\nConnecting to telescope at %s...", cfg.Telescope.BaseURL)
-		
+
 		if err := telescopeClient.Connect(); err != nil {
 			log.Fatalf("Failed to connect to telescope: %v", err)
 		}
@@ -123,7 +123,7 @@ func main() {
 			log.Println("Disconnecting from telescope...")
 			telescopeClient.Disconnect()
 		}()
-		
+
 		log.Println("✓ Telescope connected")
 	} else {
 		log.Println("\nDRY RUN MODE: Telescope commands will be simulated")
@@ -187,7 +187,7 @@ func main() {
 						Passed:    r.Passed,
 					})
 				}
-				
+
 				// Update passed waypoints based on current position
 				waypointList = tracking.DeterminePassedWaypoints(*aircraft, waypointList)
 			}
@@ -203,7 +203,7 @@ func main() {
 		if dataAge > 30 {
 			// Data is stale - use prediction
 			predicted = true
-			
+
 			// Try waypoint-based prediction first (if flight plan available)
 			if len(waypointList) > 0 {
 				predictedPos := tracking.PredictPositionWithWaypoints(
@@ -221,11 +221,11 @@ func main() {
 					ctx,
 					aircraft.Latitude,
 					aircraft.Longitude,
-					25.0, // 25 NM radius
+					25.0,                       // 25 NM radius
 					int(aircraft.Altitude*0.9), // Min altitude (10% tolerance)
 					int(aircraft.Altitude*1.1), // Max altitude (10% tolerance)
 				)
-				
+
 				if err == nil && len(airwaySegs) > 0 {
 					// Convert to tracking.AirwaySegment format
 					trackingAirways := make([]tracking.AirwaySegment, len(airwaySegs))
@@ -241,13 +241,13 @@ func main() {
 							MaxAltitude: seg.MaxAltitude,
 						}
 					}
-					
+
 					// Filter by altitude (Victor vs Jet)
 					trackingAirways = tracking.FilterAirwaysByAltitude(trackingAirways, aircraft.Altitude)
-					
+
 					// Find best matching airway
 					matchedAirwaySeg := tracking.MatchAirway(*aircraft, trackingAirways)
-					
+
 					if matchedAirwaySeg != nil {
 						// Use airway-based prediction
 						predictedPos := tracking.PredictPositionWithAirway(
@@ -274,7 +274,7 @@ func main() {
 					predictionType = "deadreckoning"
 				}
 			}
-			
+
 			// Warn if confidence is low
 			if confidence < 0.5 {
 				log.Printf("⚠️  Warning: Low prediction confidence (%.0f%%) - data is %.0fs old",
@@ -321,10 +321,10 @@ func main() {
 				predictionMode = " [DEAD RECKONING]"
 			}
 		}
-		
+
 		fmt.Printf("\n[%s] Target: %s (%s)%s\n",
 			now.Format("15:04:05"), aircraft.Callsign, aircraft.ICAO, predictionMode)
-		
+
 		// Show flight plan info if available
 		if flightPlan != nil && len(waypointList) > 0 {
 			nextWaypoint := ""
@@ -342,7 +342,7 @@ func main() {
 					flightPlan.DepartureICAO, flightPlan.ArrivalICAO)
 			}
 		}
-		
+
 		if predicted {
 			fmt.Printf("  Last Known: %.4f°N, %.4f°W, %.0f ft MSL\n",
 				aircraft.Latitude, aircraft.Longitude, aircraft.Altitude)
@@ -451,10 +451,10 @@ func formatDuration(d time.Duration) string {
 	if d == 0 {
 		return "now"
 	}
-	
+
 	minutes := int(d.Minutes())
 	seconds := int(d.Seconds()) % 60
-	
+
 	if minutes > 0 {
 		return fmt.Sprintf("%dm %ds", minutes, seconds)
 	}

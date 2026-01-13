@@ -10,12 +10,12 @@ import (
 // Config represents the complete application configuration.
 // Configuration can be loaded from a file or database.
 type Config struct {
-	Server       ServerConfig       `json:"server"`
-	Database     DatabaseConfig     `json:"database"`
-	Telescope    TelescopeConfig    `json:"telescope"`
-	ADSB         ADSBConfig         `json:"adsb"`
-	Observer     ObserverConfig     `json:"observer"`
-	FlightAware  FlightAwareConfig  `json:"flightaware"`
+	Server      ServerConfig      `json:"server"`
+	Database    DatabaseConfig    `json:"database"`
+	Telescope   TelescopeConfig   `json:"telescope"`
+	ADSB        ADSBConfig        `json:"adsb"`
+	Observer    ObserverConfig    `json:"observer"`
+	FlightAware FlightAwareConfig `json:"flightaware"`
 }
 
 // ServerConfig contains HTTP server configuration.
@@ -295,7 +295,7 @@ func DefaultConfig() *Config {
 		Telescope: TelescopeConfig{
 			BaseURL:              "http://localhost:11111",
 			DeviceNumber:         0,
-			MountType:            "altaz",       // "altaz" or "equatorial" (when using EQ wedge)
+			MountType:            "altaz", // "altaz" or "equatorial" (when using EQ wedge)
 			SlewRate:             1.0,
 			TrackingEnabled:      true,
 			Model:                "seestar-s50",
@@ -316,7 +316,7 @@ func DefaultConfig() *Config {
 			},
 			SearchRadiusNM:        50.0,
 			MaxCollectionRadiusNM: 200.0, // Deprecated: use CollectionRegions
-			CollectionRegions: []CollectionRegion{
+			CollectionRegions:     []CollectionRegion{
 				// Example regions - customize based on your location
 				// By default, no regions enabled - will use legacy MaxCollectionRadiusNM
 			},
@@ -331,7 +331,7 @@ func DefaultConfig() *Config {
 		},
 		FlightAware: FlightAwareConfig{
 			Enabled:              false,
-			RequestsPerHour:      1,  // Conservative default for free tier
+			RequestsPerHour:      1, // Conservative default for free tier
 			AutoFetchEnabled:     false,
 			FetchIntervalMinutes: 60, // Refresh every hour
 		},

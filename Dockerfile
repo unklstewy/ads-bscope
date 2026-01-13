@@ -2,55 +2,106 @@
 FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git
+RUN apk add --no-cache git ca-certificates tzdata
 
 # Set working directory
 WORKDIR /build
 
-# Copy go.mod and go.sum (if exists) first to leverage Docker cache
-COPY go.mod ./
-COPY go.sum* ./
+# Copy go.mod and go.sum first to leverage Docker cache
+COPY go.mod go.sum ./
 
-# Download dependencies
+# Download dependencies (cached if go.mod/go.sum unchanged)
 RUN go mod download
+RUN go mod verify
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ads-bscope ./cmd/ads-bscope
+# Build flags for optimized static binaries
+# -w: omit DWARF symbol table
+# -s: omit symbol table and debug information
+# -a: force rebuilding of packages
+ARG LDFLAGS="-w -s -extldflags '-static'"
 
-# Runtime stage
-FROM alpine:latest
+# Build all binaries (CGO_ENABLED=0 ensures static linking)
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o collector ./cmd/collector
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o fetch-flightplans ./cmd/fetch-flightplans
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o verify-nasr ./cmd/verify-nasr
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o verify-flightplans ./cmd/verify-flightplans
 
-# Install ca-certificates for HTTPS requests and wget for health checks
-RUN apk --no-cache add ca-certificates tzdata wget
+# Runtime stage for collector service
+FROM scratch AS collector
 
-# Create non-root user
-RUN addgroup -g 1000 adsbscope && \
-    adduser -D -u 1000 -G adsbscope adsbscope
+# Copy ca-certificates, timezone data, and passwd for non-root user
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
 
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder
-COPY --from=builder /build/ads-bscope .
+# Copy binary and configs
+COPY --from=builder /build/collector /app/
+COPY --from=builder /build/configs /app/configs
 
-# Copy configuration files
-COPY --from=builder /build/configs ./configs
-
-# Change ownership
-RUN chown -R adsbscope:adsbscope /app
-
-# Switch to non-root user
-USER adsbscope
+# Use non-root user (UID 65534 = nobody)
+USER 65534:65534
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["./collector", "--health-check"] || exit 1
 
-# Run the application
-CMD ["./ads-bscope"]
+# Run the collector service
+CMD ["./collector"]
+
+# Runtime stage for fetch-flightplans
+FROM scratch AS fetch-flightplans
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+WORKDIR /app
+
+COPY --from=builder /build/fetch-flightplans /app/
+COPY --from=builder /build/configs /app/configs
+
+USER 65534:65534
+
+CMD ["./fetch-flightplans"]
+
+# Runtime stage for verify-nasr
+FROM scratch AS verify-nasr
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+WORKDIR /app
+
+COPY --from=builder /build/verify-nasr /app/
+COPY --from=builder /build/configs /app/configs
+
+USER 65534:65534
+
+CMD ["./verify-nasr"]
+
+# Runtime stage for verify-flightplans
+FROM scratch AS verify-flightplans
+
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+
+WORKDIR /app
+
+COPY --from=builder /build/verify-flightplans /app/
+COPY --from=builder /build/configs /app/configs
+
+USER 65534:65534
+
+CMD ["./verify-flightplans"]
+
+# Default runtime stage (backwards compatible)
+FROM collector AS default

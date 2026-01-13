@@ -55,9 +55,9 @@ func main() {
 	iteration := 1
 	for maxFailed < minSafe-0.5 { // Continue until bracket is within 0.5 seconds
 		log.Printf("Iteration %d: Testing %.2f second delay...", iteration, currentDelay)
-		
+
 		success, err := testCallRate(client, cfg.Observer.Latitude, cfg.Observer.Longitude, currentDelay, *testCalls)
-		
+
 		if success {
 			log.Printf("  ✓ Success with %.2fs delay", currentDelay)
 			minSafe = currentDelay
@@ -83,16 +83,16 @@ func main() {
 				minSafe = *maxDelay
 			}
 		}
-		
+
 		log.Println()
 		iteration++
-		
+
 		// Safety limit
 		if iteration > 10 {
 			log.Println("Maximum iterations reached")
 			break
 		}
-		
+
 		// Wait before next test iteration
 		time.Sleep(3 * time.Second)
 	}
@@ -105,7 +105,7 @@ func main() {
 	log.Printf("Update your config.json:")
 	log.Printf("  \"rate_limit_seconds\": %.1f", minSafe)
 	log.Println()
-	
+
 	// Calculate practical rates
 	callsPerMinute := 60.0 / minSafe
 	log.Printf("This allows approximately %.0f API calls per minute", callsPerMinute)
@@ -121,15 +121,15 @@ func testCallRate(
 	numCalls int,
 ) (bool, error) {
 	delay := time.Duration(delaySeconds * float64(time.Second))
-	
+
 	for i := 0; i < numCalls; i++ {
 		if i > 0 {
 			time.Sleep(delay)
 		}
-		
+
 		// Make API call
 		aircraft, err := client.GetAircraft(lat, lon, 50.0)
-		
+
 		if err != nil {
 			// Check if it's a rate limit error
 			if isRateLimitError(err) {
@@ -138,10 +138,10 @@ func testCallRate(
 			// Other error
 			return false, err
 		}
-		
+
 		log.Printf("    Call %d/%d: Success (%d aircraft found)", i+1, numCalls, len(aircraft))
 	}
-	
+
 	return true, nil
 }
 
@@ -150,7 +150,7 @@ func isRateLimitError(err error) bool {
 	if err == nil {
 		return false
 	}
-	
+
 	// Check if error message contains "429" or "rate limit"
 	errMsg := err.Error()
 	return contains(errMsg, "429") || contains(errMsg, "rate limit") || contains(errMsg, "Too Many Requests")
@@ -158,9 +158,9 @@ func isRateLimitError(err error) bool {
 
 // contains checks if a string contains a substring (case-insensitive check could be added).
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		containsInner(s, substr)))
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
+		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			containsInner(s, substr)))
 }
 
 func containsInner(s, substr string) bool {

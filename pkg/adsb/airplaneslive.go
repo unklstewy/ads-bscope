@@ -70,7 +70,7 @@ func (c *AirplanesLiveClient) GetAircraft(centerLat, centerLon, radiusNM float64
 			Headers:    extractRateLimitHeaders(resp.Header),
 		}
 	}
-	
+
 	// Check other error status codes
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -123,7 +123,7 @@ func (c *AirplanesLiveClient) GetAircraftByICAO(icao string) (*Aircraft, error) 
 			Headers:    extractRateLimitHeaders(resp.Header),
 		}
 	}
-	
+
 	// Check other error status codes
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
@@ -297,8 +297,8 @@ type RateLimitError struct {
 
 // RateLimitHeaders contains rate limit information from response headers.
 type RateLimitHeaders struct {
-	Limit     int // X-Rate-Limit-Limit: Maximum requests allowed
-	Remaining int // X-Rate-Limit-Remaining: Requests remaining in current window
+	Limit     int       // X-Rate-Limit-Limit: Maximum requests allowed
+	Remaining int       // X-Rate-Limit-Remaining: Requests remaining in current window
 	Reset     time.Time // X-Rate-Limit-Reset: When the rate limit resets
 }
 
@@ -322,19 +322,20 @@ func IsRateLimitError(err error) (*RateLimitError, bool) {
 // Supports both delay-seconds (integer) and HTTP-date formats.
 //
 // Examples:
-//   Retry-After: 30                           -> 30 seconds
-//   Retry-After: Wed, 21 Oct 2015 07:28:00 GMT -> duration until that time
+//
+//	Retry-After: 30                           -> 30 seconds
+//	Retry-After: Wed, 21 Oct 2015 07:28:00 GMT -> duration until that time
 func parseRetryAfter(headers http.Header) time.Duration {
 	retryAfter := headers.Get("Retry-After")
 	if retryAfter == "" {
 		return 0
 	}
-	
+
 	// Try parsing as delay-seconds (e.g., "30")
 	if seconds, err := strconv.Atoi(retryAfter); err == nil && seconds > 0 {
 		return time.Duration(seconds) * time.Second
 	}
-	
+
 	// Try parsing as HTTP-date (e.g., "Wed, 21 Oct 2015 07:28:00 GMT")
 	if retryTime, err := http.ParseTime(retryAfter); err == nil {
 		duration := time.Until(retryTime)
@@ -342,7 +343,7 @@ func parseRetryAfter(headers http.Header) time.Duration {
 			return duration
 		}
 	}
-	
+
 	return 0
 }
 
@@ -353,7 +354,7 @@ func extractRateLimitHeaders(headers http.Header) RateLimitHeaders {
 		Limit:     -1,
 		Remaining: -1,
 	}
-	
+
 	// X-Rate-Limit-Limit or X-RateLimit-Limit
 	if limit := headers.Get("X-Rate-Limit-Limit"); limit != "" {
 		if val, err := strconv.Atoi(limit); err == nil {
@@ -364,7 +365,7 @@ func extractRateLimitHeaders(headers http.Header) RateLimitHeaders {
 			rlh.Limit = val
 		}
 	}
-	
+
 	// X-Rate-Limit-Remaining or X-RateLimit-Remaining
 	if remaining := headers.Get("X-Rate-Limit-Remaining"); remaining != "" {
 		if val, err := strconv.Atoi(remaining); err == nil {
@@ -375,7 +376,7 @@ func extractRateLimitHeaders(headers http.Header) RateLimitHeaders {
 			rlh.Remaining = val
 		}
 	}
-	
+
 	// X-Rate-Limit-Reset or X-RateLimit-Reset (Unix timestamp)
 	if reset := headers.Get("X-Rate-Limit-Reset"); reset != "" {
 		if timestamp, err := strconv.ParseInt(reset, 10, 64); err == nil {
@@ -386,6 +387,6 @@ func extractRateLimitHeaders(headers http.Header) RateLimitHeaders {
 			rlh.Reset = time.Unix(timestamp, 0)
 		}
 	}
-	
+
 	return rlh
 }

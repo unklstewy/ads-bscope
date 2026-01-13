@@ -38,49 +38,55 @@ type ViewMode int
 const (
 	ViewSky ViewMode = iota
 	ViewConfigMenu
+	ViewAirportSelect
 )
 
 type model struct {
-	cfg        *config.Config
-	database   *db.DB
-	repo       *db.AircraftRepository
-	fpRepo     *db.FlightPlanRepository
-	observer   coordinates.Observer
-	aircraft   []aircraftView
-	selected   int
-	tracking   bool
-	trackICAO  string
-	telesAlt   float64
-	telesAz    float64
-	err        error
-	minAlt     float64
-	maxAlt     float64
-	zoom       float64  // Zoom level: 1.0 = normal, 2.0 = 2x closer
-	trails     map[string]*trackTrail  // ICAO -> trail
-	
+	cfg       *config.Config
+	database  *db.DB
+	repo      *db.AircraftRepository
+	fpRepo    *db.FlightPlanRepository
+	observer  coordinates.Observer
+	aircraft  []aircraftView
+	selected  int
+	tracking  bool
+	trackICAO string
+	telesAlt  float64
+	telesAz   float64
+	err       error
+	minAlt    float64
+	maxAlt    float64
+	zoom      float64                // Zoom level: 1.0 = normal, 2.0 = 2x closer
+	trails    map[string]*trackTrail // ICAO -> trail
+
 	// Radar mode
 	radarMode    bool
 	radarCenter  coordinates.Geographic
-	radarRadius  float64  // Nautical miles
+	radarRadius  float64 // Nautical miles
 	radarAirport string
-	inputMode    string  // "airport" or "radius" or ""
+	inputMode    string // "airport" or "radius" or ""
 	inputBuffer  string
-	width        int     // Terminal width
-	height       int     // Terminal height
-	
+	width        int // Terminal width
+	height       int // Terminal height
+
 	// View mode and config menu
-	viewMode     ViewMode
-	configMenu   *configMenuModel
-	configPath   string
+	viewMode   ViewMode
+	configMenu *configMenuModel
+	configPath string
+
+	// Airport selection
+	airportList     []db.Waypoint
+	airportSelected int
 }
 
 type aircraftView struct {
 	aircraft       adsb.Aircraft
 	horiz          coordinates.HorizontalCoordinates
+	equatorial     coordinates.EquatorialCoordinates
 	range_nm       float64
 	age            float64
-	predictionMode string  // "", "waypoint", "airway", "deadreckoning"
-	matchedAirway  string  // For airway predictions
+	predictionMode string // "", "waypoint", "airway", "deadreckoning"
+	matchedAirway  string // For airway predictions
 	flightPlan     *db.FlightPlan
 	nextWaypoint   string
 }
@@ -109,7 +115,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.configMenu.height = msg.Height
 		}
 		return m, nil
-	
+
 	case configSaveMsg:
 		// Handle config save result
 		if msg.err != nil {
@@ -136,7 +142,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.minAlt, m.maxAlt = m.cfg.Telescope.GetAltitudeLimits()
 		}
 		return m, nil
-	
+
 	case configReloadMsg:
 		// Handle config reload result
 		if msg.err != nil {
@@ -150,7 +156,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.configMenu.messageIsError = false
 		}
 		return m, nil
-	
+
 	case tea.KeyMsg:
 		// If in config menu mode, delegate to config menu
 		if m.viewMode == ViewConfigMenu {
@@ -173,7 +179,45 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		
+
+		// If in airport selection mode
+		if m.viewMode == ViewAirportSelect {
+			switch msg.String() {
+			case "esc", "q":
+				// Exit to sky view
+				m.viewMode = ViewSky
+				m.airportList = nil
+				m.airportSelected = 0
+				return m, nil
+			case "up", "k":
+				if m.airportSelected > 0 {
+					m.airportSelected--
+				}
+				return m, nil
+			case "down", "j":
+				if m.airportSelected < len(m.airportList)-1 {
+					m.airportSelected++
+				}
+				return m, nil
+			case "enter", " ":
+				// Select airport and enter radar mode
+				if len(m.airportList) > 0 && m.airportSelected < len(m.airportList) {
+					airport := m.airportList[m.airportSelected]
+					m.radarAirport = airport.Identifier
+					m.radarCenter = coordinates.Geographic{
+						Latitude:  airport.Latitude,
+						Longitude: airport.Longitude,
+						Altitude:  0,
+					}
+					m.radarMode = true
+					m.viewMode = ViewSky
+					m.airportList = nil
+				}
+				return m, nil
+			}
+			return m, nil
+		}
+
 		// Handle input mode (airport code or radius entry)
 		if m.inputMode != "" {
 			switch msg.String() {
@@ -230,13 +274,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		}
-		
+
 		// Clear error on any keypress (but don't quit)
 		if m.err != nil {
 			m.err = nil
 			return m, nil
 		}
-		
+
 		// Normal mode controls
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -248,14 +292,44 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.configMenu = &menu
 			return m, nil
 		case "r":
-			// Toggle radar mode or start radar setup
+			// Toggle radar mode or show airport selection from active regions
 			if m.radarMode {
 				m.radarMode = false
 			} else {
-				// Start airport input
-				m.inputMode = "airport"
-				m.inputBuffer = ""
-				m.err = nil
+				// Check if there are active collection regions
+				activeRegions := make([]config.CollectionRegion, 0)
+				for _, region := range m.cfg.ADSB.CollectionRegions {
+					if region.Enabled {
+						activeRegions = append(activeRegions, region)
+					}
+				}
+
+				if len(activeRegions) > 0 {
+					// Load airports from active regions
+					ctx := context.Background()
+					m.airportList = make([]db.Waypoint, 0)
+
+					// Collect airports from each active region
+					for _, region := range activeRegions {
+						airports, err := m.fpRepo.FindAirportsNear(ctx, region.Latitude, region.Longitude, region.RadiusNM, 10)
+						if err == nil {
+							m.airportList = append(m.airportList, airports...)
+						}
+					}
+
+					if len(m.airportList) > 0 {
+						// Show airport selection view
+						m.viewMode = ViewAirportSelect
+						m.airportSelected = 0
+					} else {
+						m.err = fmt.Errorf("no airports found in active regions")
+					}
+				} else {
+					// Fallback to manual airport entry
+					m.inputMode = "airport"
+					m.inputBuffer = ""
+					m.err = nil
+				}
 			}
 		case "up", "k":
 			if m.selected > 0 {
@@ -323,11 +397,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) updateAircraft() {
 	ctx := context.Background()
-	
+
 	// Get aircraft from database based on mode
 	var aircraftList []adsb.Aircraft
 	var err error
-	
+
 	if m.radarMode && m.radarCenter.Latitude != 0 && m.radarCenter.Longitude != 0 {
 		// Radar mode: fetch aircraft near radar center
 		aircraftList, err = m.repo.GetAircraftNear(
@@ -342,7 +416,7 @@ func (m *model) updateAircraft() {
 		// Sky view mode: use observer-relative trackable aircraft
 		aircraftList, err = m.repo.GetTrackableAircraft(ctx)
 	}
-	
+
 	if err != nil {
 		m.err = err
 		return
@@ -353,12 +427,12 @@ func (m *model) updateAircraft() {
 
 	for _, ac := range aircraftList {
 		dataAge := now.Sub(ac.LastSeen).Seconds()
-		
+
 		// Get flight plan if available
 		flightPlan, _ := m.fpRepo.GetFlightPlanByICAO(ctx, ac.ICAO)
 		var waypointList []tracking.Waypoint
 		var nextWaypoint string
-		
+
 		if flightPlan != nil {
 			routes, err := m.fpRepo.GetFlightPlanRoute(ctx, flightPlan.ID)
 			if err == nil && len(routes) > 0 {
@@ -372,7 +446,7 @@ func (m *model) updateAircraft() {
 					})
 				}
 				waypointList = tracking.DeterminePassedWaypoints(ac, waypointList)
-				
+
 				// Find next waypoint
 				for _, wp := range waypointList {
 					if !wp.Passed {
@@ -382,12 +456,12 @@ func (m *model) updateAircraft() {
 				}
 			}
 		}
-		
+
 		// Calculate position (with prediction if needed)
 		var acPos coordinates.Geographic
 		var predictionMode string
 		var matchedAirway string
-		
+
 		if dataAge > 30 {
 			// Data is stale - use prediction
 			if len(waypointList) > 0 {
@@ -409,7 +483,7 @@ func (m *model) updateAircraft() {
 					int(ac.Altitude*0.9),
 					int(ac.Altitude*1.1),
 				)
-				
+
 				if err == nil && len(airwaySegs) > 0 {
 					trackingAirways := make([]tracking.AirwaySegment, len(airwaySegs))
 					for i, seg := range airwaySegs {
@@ -424,10 +498,10 @@ func (m *model) updateAircraft() {
 							MaxAltitude: seg.MaxAltitude,
 						}
 					}
-					
+
 					trackingAirways = tracking.FilterAirwaysByAltitude(trackingAirways, ac.Altitude)
 					matchedAirwaySeg := tracking.MatchAirway(ac, trackingAirways)
-					
+
 					if matchedAirwaySeg != nil {
 						predictedPos := tracking.PredictPositionWithAirway(
 							ac,
@@ -461,7 +535,13 @@ func (m *model) updateAircraft() {
 
 		horiz := coordinates.GeographicToHorizontal(acPos, m.observer, now)
 		rangeNM := coordinates.DistanceNauticalMiles(m.observer.Location, acPos)
-		
+
+		// Calculate equatorial coordinates if telescope is in equatorial mode
+		var equatorial coordinates.EquatorialCoordinates
+		if m.cfg.Telescope.MountType == "equatorial" {
+			equatorial = coordinates.HorizontalToEquatorial(horiz, m.observer, now)
+		}
+
 		// Update track trail
 		if m.trails[ac.ICAO] == nil {
 			m.trails[ac.ICAO] = &trackTrail{
@@ -481,6 +561,7 @@ func (m *model) updateAircraft() {
 		m.aircraft = append(m.aircraft, aircraftView{
 			aircraft:       ac,
 			horiz:          horiz,
+			equatorial:     equatorial,
 			range_nm:       rangeNM,
 			age:            dataAge,
 			predictionMode: predictionMode,
@@ -496,7 +577,12 @@ func (m model) View() string {
 	if m.viewMode == ViewConfigMenu && m.configMenu != nil {
 		return m.configMenu.View()
 	}
-	
+
+	// If in airport selection mode, render airport selection
+	if m.viewMode == ViewAirportSelect {
+		return m.renderAirportSelection()
+	}
+
 	var s strings.Builder
 
 	// Header
@@ -505,7 +591,7 @@ func (m model) View() string {
 		Foreground(lipgloss.Color("86")).
 		Background(lipgloss.Color("235")).
 		Padding(0, 1)
-	
+
 	title := "ADS-B SCOPE TUI VIEWFINDER"
 	if m.radarMode {
 		title = "ADS-B SCOPE RADAR MODE"
@@ -518,7 +604,7 @@ func (m model) View() string {
 		promptStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true)
 		inputStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
 		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-		
+
 		if m.inputMode == "airport" {
 			s.WriteString(promptStyle.Render("Enter airport code (e.g., KATL, JFK):"))
 			s.WriteString("\n")
@@ -549,16 +635,16 @@ func (m model) View() string {
 		// Radar mode view
 		radar := m.renderRadar()
 		radInfo := m.renderRadarInfo()
-		
+
 		// Split and combine
 		radarLines := strings.Split(radar, "\n")
 		infoLines := strings.Split(radInfo, "\n")
-		
+
 		maxLines := len(radarLines)
 		if len(infoLines) > maxLines {
 			maxLines = len(infoLines)
 		}
-		
+
 		for i := 0; i < maxLines; i++ {
 			if i < len(radarLines) {
 				s.WriteString(radarLines[i])
@@ -571,7 +657,7 @@ func (m model) View() string {
 			}
 			s.WriteString("\n")
 		}
-		
+
 		// Aircraft list
 		s.WriteString(m.renderAircraftList())
 		s.WriteString("\n")
@@ -579,17 +665,17 @@ func (m model) View() string {
 		// Sky view mode
 		sky := m.renderSky()
 		legend := m.renderLegend()
-		
+
 		// Split sky and legend
 		skyLines := strings.Split(sky, "\n")
 		legendLines := strings.Split(legend, "\n")
-		
+
 		// Combine side by side
 		maxLines := len(skyLines)
 		if len(legendLines) > maxLines {
 			maxLines = len(legendLines)
 		}
-		
+
 		for i := 0; i < maxLines; i++ {
 			if i < len(skyLines) {
 				s.WriteString(skyLines[i])
@@ -644,13 +730,13 @@ func (m model) renderSky() string {
 	grid[skyHeight-1][skyWidth/2] = 'S'
 	grid[skyHeight-1][skyWidth*3/4] = 'W'
 	grid[skyHeight-1][0] = 'N'
-	
+
 	// Draw range rings (concentric circles at 5, 10, 25, 50 NM)
 	for _, ac := range m.aircraft {
 		if ac.horiz.Altitude < m.minAlt || ac.horiz.Altitude > m.maxAlt {
 			continue
 		}
-		
+
 		// Draw rings at different ranges
 		for _, ringRange := range []float64{5.0, 10.0, 25.0, 50.0} {
 			if math.Abs(ac.range_nm-ringRange) < 1.0 {
@@ -658,7 +744,7 @@ func (m model) renderSky() string {
 				m.drawRingSegment(grid, ac.horiz.Azimuth, ringRange)
 			}
 		}
-		
+
 		// Draw track trails
 		if trail, ok := m.trails[ac.aircraft.ICAO]; ok {
 			for i := 0; i < len(trail.positions)-1; i++ {
@@ -699,7 +785,7 @@ func (m model) renderSky() string {
 				symbol = '◉' // Tracked aircraft
 			}
 			grid[y][x] = symbol
-			
+
 			// Draw velocity vector (arrow showing direction of motion)
 			if ac.aircraft.GroundSpeed > 50 { // Only for moving aircraft
 				m.drawVelocityVector(grid, x, y, ac.aircraft.Track, ac.aircraft.GroundSpeed)
@@ -741,7 +827,7 @@ func (m model) renderSky() string {
 func (m model) altAzToScreen(altitude, azimuth float64) (int, int) {
 	// Map altitude (0-90°) to screen Y (bottom to top)
 	// Map azimuth (0-360°) to screen X (left to right, N=0, E=90, S=180, W=270)
-	
+
 	// Normalize azimuth to 0-360
 	for azimuth < 0 {
 		azimuth += 360
@@ -769,7 +855,7 @@ func (m model) altAzToScreen(altitude, azimuth float64) (int, int) {
 // drawRingSegment draws a partial range ring indicator
 func (m model) drawRingSegment(grid [][]rune, azimuth, rangeNM float64) {
 	// Draw a small arc segment near the aircraft
-	for az := azimuth - 5; az <= azimuth + 5; az++ {
+	for az := azimuth - 5; az <= azimuth+5; az++ {
 		// Calculate altitude for ring display (fixed at horizon level)
 		alt := m.minAlt + 5.0
 		x, y := m.altAzToScreen(alt, az)
@@ -784,19 +870,19 @@ func (m model) drawRingSegment(grid [][]rune, azimuth, rangeNM float64) {
 // drawVelocityVector draws an arrow showing aircraft motion
 func (m model) drawVelocityVector(grid [][]rune, x, y int, trackDeg, speedKts float64) {
 	// Vector length based on speed (normalized)
-	length := int(speedKts / 100.0) + 1
+	length := int(speedKts/100.0) + 1
 	if length > 5 {
 		length = 5
 	}
-	
+
 	// Convert track to screen coordinates
 	// Track: 0=N, 90=E, 180=S, 270=W
 	trackRad := trackDeg * math.Pi / 180.0
-	
+
 	for i := 1; i <= length; i++ {
 		dx := int(float64(i) * math.Sin(trackRad) * 0.5)
 		dy := -int(float64(i) * math.Cos(trackRad) * 0.5) // Negative because screen Y is inverted
-		
+
 		nx, ny := x+dx, y+dy
 		if nx >= 0 && nx < skyWidth && ny >= 0 && ny < skyHeight {
 			if grid[ny][nx] == ' ' || grid[ny][nx] == '·' {
@@ -835,7 +921,7 @@ func (m model) renderAircraftList() string {
 
 	for i := start; i < end; i++ {
 		ac := m.aircraft[i]
-		
+
 		// Selection indicator
 		prefix := "  "
 		if i == m.selected {
@@ -858,7 +944,7 @@ func (m model) renderAircraftList() string {
 		case "deadreckoning":
 			predMode = " [DR]"
 		}
-		
+
 		// Age indicator
 		ageStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
 		if ac.age > 30 {
@@ -874,17 +960,40 @@ func (m model) renderAircraftList() string {
 			callsign = "--------"
 		}
 
-		line := fmt.Sprintf("%s%-8s  %6.0f ft  %5.1f nm  Az:%3.0f° Alt:%2.0f°  %4.0fs%s%s",
-			prefix,
-			callsign,
-			ac.aircraft.Altitude,
-			ac.range_nm,
-			ac.horiz.Azimuth,
-			ac.horiz.Altitude,
-			ac.age,
-			predMode,
-			trackIndicator,
-		)
+		// Display coordinates based on mount type
+		var line string
+		if m.cfg.Telescope.MountType == "equatorial" {
+			// Show RA/Dec for equatorial mounts
+			// Format RA as HH:MM:SS
+			raHours := int(ac.equatorial.RightAscension)
+			raMinutes := int((ac.equatorial.RightAscension - float64(raHours)) * 60)
+			raSeconds := int(((ac.equatorial.RightAscension-float64(raHours))*60 - float64(raMinutes)) * 60)
+
+			line = fmt.Sprintf("%s%-8s  %6.0f ft  %5.1f nm  RA:%02d:%02d:%02d Dec:%+6.2f°  %4.0fs%s%s",
+				prefix,
+				callsign,
+				ac.aircraft.Altitude,
+				ac.range_nm,
+				raHours, raMinutes, raSeconds,
+				ac.equatorial.Declination,
+				ac.age,
+				predMode,
+				trackIndicator,
+			)
+		} else {
+			// Show Alt/Az for altazimuth mounts
+			line = fmt.Sprintf("%s%-8s  %6.0f ft  %5.1f nm  Az:%3.0f° Alt:%2.0f°  %4.0fs%s%s",
+				prefix,
+				callsign,
+				ac.aircraft.Altitude,
+				ac.range_nm,
+				ac.horiz.Azimuth,
+				ac.horiz.Altitude,
+				ac.age,
+				predMode,
+				trackIndicator,
+			)
+		}
 
 		if i == m.selected {
 			line = lipgloss.NewStyle().
@@ -894,7 +1003,7 @@ func (m model) renderAircraftList() string {
 
 		list.WriteString(line)
 		list.WriteString("\n")
-		
+
 		// Show flight plan info if this is the selected aircraft
 		if i == m.selected && ac.flightPlan != nil {
 			fpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("39"))
@@ -912,7 +1021,25 @@ func (m model) renderAircraftList() string {
 	if m.tracking {
 		list.WriteString("\n")
 		telescopeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Bold(true)
-		list.WriteString(telescopeStyle.Render(fmt.Sprintf("Telescope: Az %.1f°  Alt %.1f°  Zoom: %.1fx", m.telesAz, m.telesAlt, m.zoom)))
+
+		if m.cfg.Telescope.MountType == "equatorial" {
+			// Convert telescope Alt/Az to RA/Dec for display
+			telescopeHoriz := coordinates.HorizontalCoordinates{
+				Altitude: m.telesAlt,
+				Azimuth:  m.telesAz,
+			}
+			telescopeEq := coordinates.HorizontalToEquatorial(telescopeHoriz, m.observer, time.Now().UTC())
+
+			// Format RA as HH:MM:SS
+			raHours := int(telescopeEq.RightAscension)
+			raMinutes := int((telescopeEq.RightAscension - float64(raHours)) * 60)
+			raSeconds := int(((telescopeEq.RightAscension-float64(raHours))*60 - float64(raMinutes)) * 60)
+
+			list.WriteString(telescopeStyle.Render(fmt.Sprintf("Telescope: RA %02d:%02d:%02d  Dec %+6.2f°  Zoom: %.1fx",
+				raHours, raMinutes, raSeconds, telescopeEq.Declination, m.zoom)))
+		} else {
+			list.WriteString(telescopeStyle.Render(fmt.Sprintf("Telescope: Az %.1f°  Alt %.1f°  Zoom: %.1fx", m.telesAz, m.telesAlt, m.zoom)))
+		}
 	}
 
 	return list.String()
@@ -921,11 +1048,11 @@ func (m model) renderAircraftList() string {
 // renderLegend renders the legend panel showing symbols and ranges
 func (m model) renderLegend() string {
 	var leg strings.Builder
-	
+
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 	leg.WriteString(headerStyle.Render("Legend"))
 	leg.WriteString("\n\n")
-	
+
 	// Symbols
 	leg.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Render("○"))
 	leg.WriteString(" Untracked\n")
@@ -938,7 +1065,7 @@ func (m model) renderLegend() string {
 	leg.WriteString("· Trail/Ring\n")
 	leg.WriteString("→ Velocity\n")
 	leg.WriteString("\n")
-	
+
 	// Prediction modes
 	headerStyle2 := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 	leg.WriteString(headerStyle2.Render("Prediction"))
@@ -947,7 +1074,7 @@ func (m model) renderLegend() string {
 	leg.WriteString("[AWY] Airway\n")
 	leg.WriteString("[DR]  Dead Reckoning\n")
 	leg.WriteString("\n")
-	
+
 	// Range rings
 	headerStyle3 := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
 	leg.WriteString(headerStyle3.Render("Range Rings"))
@@ -960,14 +1087,91 @@ func (m model) renderLegend() string {
 	leg.WriteString(" 25 nm\n")
 	leg.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("◦"))
 	leg.WriteString(" 50 nm\n")
-	
+
 	return leg.String()
+}
+
+// renderAirportSelection renders the airport selection view.
+func (m model) renderAirportSelection() string {
+	var s strings.Builder
+
+	// Header
+	titleStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("86")).
+		Background(lipgloss.Color("235")).
+		Padding(0, 1)
+
+	s.WriteString(titleStyle.Render("SELECT AIRPORT FOR RADAR VIEW"))
+	s.WriteString("\n\n")
+
+	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
+	s.WriteString(headerStyle.Render("Airports from Active Collection Regions:"))
+	s.WriteString(fmt.Sprintf(" (%d)\n\n", len(m.airportList)))
+
+	if len(m.airportList) == 0 {
+		s.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Render("  No airports found"))
+		s.WriteString("\n\n")
+		helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+		s.WriteString(helpStyle.Render("ESC: Back"))
+		return s.String()
+	}
+
+	// Show airports (up to 20)
+	for i := 0; i < len(m.airportList) && i < 20; i++ {
+		airport := m.airportList[i]
+
+		// Selection indicator
+		prefix := "  "
+		if i == m.airportSelected {
+			prefix = "→ "
+		}
+
+		// Format name (truncate if too long)
+		name := airport.Name
+		if len(name) > 40 {
+			name = name[:37] + "..."
+		}
+		if name == "" {
+			name = "(unnamed)"
+		}
+
+		line := fmt.Sprintf("%s%-8s  %-40s  %8.4f°, %9.4f°",
+			prefix,
+			airport.Identifier,
+			name,
+			airport.Latitude,
+			airport.Longitude,
+		)
+
+		if i == m.airportSelected {
+			line = lipgloss.NewStyle().
+				Background(lipgloss.Color("237")).
+				Foreground(lipgloss.Color("226")).
+				Render(line)
+		}
+
+		s.WriteString(line)
+		s.WriteString("\n")
+	}
+
+	if len(m.airportList) > 20 {
+		s.WriteString(fmt.Sprintf("\n  ... and %d more\n", len(m.airportList)-20))
+	}
+
+	// Controls
+	s.WriteString("\n")
+	helpStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	s.WriteString(helpStyle.Render("↑/↓: Navigate  ENTER/SPACE: Select  ESC/Q: Back"))
+	s.WriteString("\n")
+
+	return s.String()
 }
 
 func main() {
 	// Config path
 	configPath := "configs/config.json"
-	
+
 	// Load config
 	cfg, err := config.Load(configPath)
 	if err != nil {
@@ -1007,13 +1211,13 @@ func main() {
 		observer:    observer,
 		minAlt:      minAlt,
 		maxAlt:      maxAlt,
-		telesAlt:    45, // Start at 45° altitude
+		telesAlt:    45,  // Start at 45° altitude
 		telesAz:     180, // Start pointing south
 		zoom:        1.0, // Normal zoom
 		trails:      make(map[string]*trackTrail),
-		radarRadius: 100.0, // Default radar radius 100 NM
-		width:       80,  // Default width (will be updated on first render)
-		height:      30,  // Default height (will be updated on first render)
+		radarRadius: 100.0,   // Default radar radius 100 NM
+		width:       80,      // Default width (will be updated on first render)
+		height:      30,      // Default height (will be updated on first render)
 		viewMode:    ViewSky, // Start in sky view mode
 		configPath:  configPath,
 	}

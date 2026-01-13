@@ -27,7 +27,7 @@ func main() {
 
 	fmt.Println("===========================================")
 	fmt.Println("  Flight Plan Verification")
-	fmt.Println("===========================================\n")
+	fmt.Println("===========================================")
 
 	// If a callsign argument is provided, test API fetch
 	if len(os.Args) > 1 {

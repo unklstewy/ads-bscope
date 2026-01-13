@@ -12,10 +12,10 @@ import (
 
 // configMenuModel represents the configuration menu state.
 type configMenuModel struct {
-	cfg             *config.Config // Working copy of configuration
-	originalCfg     *config.Config // Original config for revert
-	configPath      string         // Path to config file
-	
+	cfg         *config.Config // Working copy of configuration
+	originalCfg *config.Config // Original config for revert
+	configPath  string         // Path to config file
+
 	// Navigation state
 	inMainMenu      bool   // True if in main menu, false if in submenu
 	currentSection  int    // Which section is selected in main menu
@@ -24,15 +24,15 @@ type configMenuModel struct {
 	editBuffer      string // Buffer for text editing
 	editingRegion   bool   // Whether we're editing region details
 	regionEditField int    // Which region field is being edited (0=name, 1=lat, 2=lon, 3=radius)
-	
+
 	// Status
-	dirty           bool   // Whether config has unsaved changes
-	message         string // Status message to display
-	messageIsError  bool   // Whether message is an error
-	
+	dirty          bool   // Whether config has unsaved changes
+	message        string // Status message to display
+	messageIsError bool   // Whether message is an error
+
 	// UI state
-	width           int
-	height          int
+	width  int
+	height int
 }
 
 // ConfigSection represents a section in the config menu.
@@ -72,12 +72,12 @@ func newConfigMenuModel(cfg *config.Config, configPath string) configMenuModel {
 	// Deep copy config for working copy
 	workingCfg := *cfg
 	originalCfg := *cfg
-	
+
 	return configMenuModel{
 		cfg:            &workingCfg,
 		originalCfg:    &originalCfg,
 		configPath:     configPath,
-		inMainMenu:     true,  // Start in main menu
+		inMainMenu:     true, // Start in main menu
 		currentSection: 0,
 		currentField:   0,
 		dirty:          false,
@@ -94,13 +94,13 @@ func (m configMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
-		
+
 	case tea.KeyMsg:
 		// If editing a field, handle edit mode keys
 		if m.editing {
 			return m.handleEditMode(msg)
 		}
-		
+
 		// Navigation mode keys
 		switch msg.String() {
 		case "esc":
@@ -120,19 +120,19 @@ func (m configMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Otherwise exit config menu (will be handled by parent)
 			return m, tea.Quit
-			
+
 		case "q":
 			// Q always exits completely
 			return m, tea.Quit
-			
+
 		case "up", "k":
 			m.navigateUp()
 			m.message = ""
-			
+
 		case "down", "j":
 			m.navigateDown()
 			m.message = ""
-			
+
 		case "enter":
 			if m.inMainMenu {
 				// Enter submenu
@@ -152,14 +152,14 @@ func (m configMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					// Otherwise enter region edit mode
 					m.editingRegion = true
-					m.regionEditField = 0  // Start with name
+					m.regionEditField = 0 // Start with name
 					m.message = "Editing region. Use ↑/↓ to select field, ENTER to edit, ESC when done"
 					return m, nil
 				}
 				// Start editing selected field
 				m.startEditing()
 			}
-			
+
 		case " ":
 			// Space key - toggle boolean fields or regions
 			if !m.inMainMenu && !m.editing {
@@ -172,7 +172,7 @@ func (m configMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				// For other boolean fields, could add toggle logic here
 			}
-			
+
 		case "x":
 			// Delete region (only in regions submenu, use X to avoid conflict with D for defaults)
 			if !m.inMainMenu && ConfigSection(m.currentSection) == SectionRegions {
@@ -181,23 +181,32 @@ func (m configMenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-			
+
 		case "d":
 			// Restore defaults (only from main menu)
 			if m.inMainMenu {
 				m.restoreDefaults()
 			}
-			
+
 		case "s":
 			// Save configuration
 			return m, m.saveConfig()
-			
+
 		case "r":
 			// Reload from file
 			return m, m.reloadConfig()
+
+		case "o":
+			// Create observer position from region (only if in regions submenu)
+			if !m.inMainMenu && ConfigSection(m.currentSection) == SectionRegions {
+				if m.currentField < len(m.cfg.ADSB.CollectionRegions) {
+					m.createObserverFromRegion()
+				}
+				return m, nil
+			}
 		}
 	}
-	
+
 	return m, nil
 }
 
@@ -209,7 +218,7 @@ func (m configMenuModel) handleEditMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.editing = false
 		m.editBuffer = ""
 		m.message = "Edit cancelled"
-		
+
 	case "enter":
 		// Save field value
 		if err := m.saveFieldValue(); err != nil {
@@ -222,19 +231,19 @@ func (m configMenuModel) handleEditMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.message = "Field updated (not saved)"
 			m.messageIsError = false
 		}
-		
+
 	case "backspace":
 		if len(m.editBuffer) > 0 {
 			m.editBuffer = m.editBuffer[:len(m.editBuffer)-1]
 		}
-		
+
 	default:
 		// Add character to buffer
 		if len(msg.String()) == 1 {
 			m.editBuffer += msg.String()
 		}
 	}
-	
+
 	return m, nil
 }
 
@@ -245,7 +254,7 @@ func (m *configMenuModel) navigateUp() {
 		if m.regionEditField > 0 {
 			m.regionEditField--
 		} else {
-			m.regionEditField = 3  // Wrap to radius
+			m.regionEditField = 3 // Wrap to radius
 		}
 	} else if m.inMainMenu {
 		// In main menu, navigate sections
@@ -272,7 +281,7 @@ func (m *configMenuModel) navigateDown() {
 		if m.regionEditField < 3 {
 			m.regionEditField++
 		} else {
-			m.regionEditField = 0  // Wrap to name
+			m.regionEditField = 0 // Wrap to name
 		}
 	} else if m.inMainMenu {
 		// In main menu, navigate sections
@@ -331,7 +340,7 @@ func (m *configMenuModel) startEditing() {
 		m.message = "Editing... (ENTER to save, ESC to cancel)"
 		return
 	}
-	
+
 	// Get current field value as string
 	value := m.getCurrentFieldValue()
 	m.editBuffer = value
@@ -342,7 +351,7 @@ func (m *configMenuModel) startEditing() {
 // getCurrentFieldValue returns the current value of the selected field as a string.
 func (m *configMenuModel) getCurrentFieldValue() string {
 	section := ConfigSection(m.currentSection)
-	
+
 	switch section {
 	case SectionGeneral:
 		switch m.currentField {
@@ -355,7 +364,7 @@ func (m *configMenuModel) getCurrentFieldValue() string {
 				return fmt.Sprintf("%.1f", m.cfg.ADSB.Sources[0].RateLimitSeconds)
 			}
 		}
-		
+
 	case SectionObserver:
 		switch m.currentField {
 		case 0:
@@ -369,7 +378,7 @@ func (m *configMenuModel) getCurrentFieldValue() string {
 		case 4:
 			return m.cfg.Observer.TimeZone
 		}
-		
+
 	case SectionTelescope:
 		switch m.currentField {
 		case 0:
@@ -389,7 +398,7 @@ func (m *configMenuModel) getCurrentFieldValue() string {
 		case 7:
 			return fmt.Sprintf("%t", m.cfg.Telescope.TrackingEnabled)
 		}
-		
+
 	case SectionADSB:
 		if len(m.cfg.ADSB.Sources) > 0 {
 			source := m.cfg.ADSB.Sources[0]
@@ -407,7 +416,7 @@ func (m *configMenuModel) getCurrentFieldValue() string {
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -417,9 +426,9 @@ func (m *configMenuModel) saveFieldValue() error {
 	if m.editingRegion && m.currentField < len(m.cfg.ADSB.CollectionRegions) {
 		value := m.editBuffer
 		switch m.regionEditField {
-		case 0:  // Name
+		case 0: // Name
 			m.cfg.ADSB.CollectionRegions[m.currentField].Name = value
-		case 1:  // Latitude
+		case 1: // Latitude
 			var lat float64
 			if _, err := fmt.Sscanf(value, "%f", &lat); err != nil {
 				return fmt.Errorf("invalid number: %v", err)
@@ -428,7 +437,7 @@ func (m *configMenuModel) saveFieldValue() error {
 				return fmt.Errorf("latitude must be between -90 and +90")
 			}
 			m.cfg.ADSB.CollectionRegions[m.currentField].Latitude = lat
-		case 2:  // Longitude
+		case 2: // Longitude
 			var lon float64
 			if _, err := fmt.Sscanf(value, "%f", &lon); err != nil {
 				return fmt.Errorf("invalid number: %v", err)
@@ -437,7 +446,7 @@ func (m *configMenuModel) saveFieldValue() error {
 				return fmt.Errorf("longitude must be between -180 and +180")
 			}
 			m.cfg.ADSB.CollectionRegions[m.currentField].Longitude = lon
-		case 3:  // Radius
+		case 3: // Radius
 			var radius float64
 			if _, err := fmt.Sscanf(value, "%f", &radius); err != nil {
 				return fmt.Errorf("invalid number: %v", err)
@@ -449,10 +458,10 @@ func (m *configMenuModel) saveFieldValue() error {
 		}
 		return nil
 	}
-	
+
 	section := ConfigSection(m.currentSection)
 	value := m.editBuffer
-	
+
 	switch section {
 	case SectionGeneral:
 		switch m.currentField {
@@ -479,7 +488,7 @@ func (m *configMenuModel) saveFieldValue() error {
 				m.cfg.ADSB.Sources[0].RateLimitSeconds = rateLimit
 			}
 		}
-		
+
 	case SectionObserver:
 		switch m.currentField {
 		case 0:
@@ -514,7 +523,7 @@ func (m *configMenuModel) saveFieldValue() error {
 		case 4:
 			m.cfg.Observer.TimeZone = value
 		}
-		
+
 	case SectionTelescope:
 		switch m.currentField {
 		case 0:
@@ -557,7 +566,7 @@ func (m *configMenuModel) saveFieldValue() error {
 			}
 			m.cfg.Telescope.TrackingEnabled = enabled
 		}
-		
+
 	case SectionADSB:
 		if len(m.cfg.ADSB.Sources) > 0 {
 			switch m.currentField {
@@ -592,7 +601,7 @@ func (m *configMenuModel) saveFieldValue() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -642,7 +651,7 @@ func (m *configMenuModel) toggleRegion() {
 func (m *configMenuModel) addNewRegion() {
 	newRegion := config.CollectionRegion{
 		Name:      "New Region",
-		Latitude:  m.cfg.Observer.Latitude,  // Default to observer location
+		Latitude:  m.cfg.Observer.Latitude, // Default to observer location
 		Longitude: m.cfg.Observer.Longitude,
 		RadiusNM:  100.0,
 		Enabled:   false,
@@ -677,6 +686,24 @@ func (m *configMenuModel) deleteRegion() {
 	}
 }
 
+// createObserverFromRegion creates observer position based on selected region.
+func (m *configMenuModel) createObserverFromRegion() {
+	if m.currentField < len(m.cfg.ADSB.CollectionRegions) {
+		region := m.cfg.ADSB.CollectionRegions[m.currentField]
+
+		// Update observer to match region center
+		m.cfg.Observer.Name = fmt.Sprintf("%s Observer", region.Name)
+		m.cfg.Observer.Latitude = region.Latitude
+		m.cfg.Observer.Longitude = region.Longitude
+		// Keep existing elevation and timezone as they may be environment-specific
+
+		m.dirty = true
+		m.message = fmt.Sprintf("Observer position set to %s center (lat: %.4f°, lon: %.4f°) - not saved",
+			region.Name, region.Latitude, region.Longitude)
+		m.messageIsError = false
+	}
+}
+
 // Custom messages
 type configSaveMsg struct {
 	success bool
@@ -690,7 +717,7 @@ type configReloadMsg struct {
 
 func (m configMenuModel) View() string {
 	var s strings.Builder
-	
+
 	// Header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -698,10 +725,10 @@ func (m configMenuModel) View() string {
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderBottom(true).
 		Padding(0, 1)
-	
+
 	s.WriteString(headerStyle.Render("Configuration Menu"))
 	s.WriteString("\n\n")
-	
+
 	// Controls - different for main menu vs submenu
 	controlsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	if m.inMainMenu {
@@ -710,14 +737,14 @@ func (m configMenuModel) View() string {
 		s.WriteString(controlsStyle.Render("[↑/↓] Navigate  [ENTER] Edit  [ESC] Back to Menu  [S] Save  [R] Reload"))
 	}
 	s.WriteString("\n")
-	
+
 	// Dirty indicator
 	if m.dirty {
 		dirtyStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
 		s.WriteString(dirtyStyle.Render("Modified: * (unsaved changes)"))
 	}
 	s.WriteString("\n\n")
-	
+
 	// Status message
 	if m.message != "" {
 		msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("46"))
@@ -727,25 +754,25 @@ func (m configMenuModel) View() string {
 		s.WriteString(msgStyle.Render(m.message))
 		s.WriteString("\n\n")
 	}
-	
+
 	// Render main menu or submenu
 	if m.inMainMenu {
 		s.WriteString(m.renderMainMenu())
 	} else {
 		s.WriteString(m.renderSubmenu(ConfigSection(m.currentSection)))
 	}
-	
+
 	return s.String()
 }
 
 // renderMainMenu renders the main menu showing all sections.
 func (m *configMenuModel) renderMainMenu() string {
 	var s strings.Builder
-	
+
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("51"))
 	s.WriteString(headerStyle.Render("━━━ CONFIGURATION SECTIONS ━━━"))
 	s.WriteString("\n\n")
-	
+
 	// Section descriptions
 	sectionDescriptions := map[ConfigSection]string{
 		SectionGeneral:   "Server port, update intervals, and rate limits",
@@ -755,27 +782,27 @@ func (m *configMenuModel) renderMainMenu() string {
 		SectionADSB:      "ADS-B data sources and search parameters",
 		SectionDatabase:  "Database connection (read-only)",
 	}
-	
+
 	// Render each section as menu item
 	for i := 0; i < int(NumSections); i++ {
 		section := ConfigSection(i)
 		selected := i == m.currentSection
-		
+
 		// Selection indicator
 		prefix := "  "
 		if selected {
 			prefix = "▸ "
 		}
-		
+
 		// Section name style
 		nameStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 		if selected {
 			nameStyle = nameStyle.Bold(true).Foreground(lipgloss.Color("51"))
 		}
-		
+
 		// Description style
 		descStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
-		
+
 		// Render menu item
 		s.WriteString(prefix)
 		s.WriteString(nameStyle.Render(section.String()))
@@ -784,25 +811,25 @@ func (m *configMenuModel) renderMainMenu() string {
 		s.WriteString(descStyle.Render(sectionDescriptions[section]))
 		s.WriteString("\n\n")
 	}
-	
+
 	// Hint
 	hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true)
 	s.WriteString("\n")
 	s.WriteString(hintStyle.Render("Press ENTER to configure the selected section"))
 	s.WriteString("\n")
-	
+
 	return s.String()
 }
 
 // renderSubmenu renders a specific configuration section with fields and tooltips.
 func (m *configMenuModel) renderSubmenu(section ConfigSection) string {
 	var s strings.Builder
-	
+
 	// Section header with breadcrumb
 	headerStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("51"))
 	s.WriteString(headerStyle.Render(fmt.Sprintf("━━━ %s ━━━", section.String())))
 	s.WriteString("\n\n")
-	
+
 	// Render fields based on section
 	switch section {
 	case SectionGeneral:
@@ -818,21 +845,21 @@ func (m *configMenuModel) renderSubmenu(section ConfigSection) string {
 	case SectionDatabase:
 		m.renderDatabaseSubmenu(&s)
 	}
-	
+
 	return s.String()
 }
 
 // renderSection renders a configuration section.
 func (m *configMenuModel) renderSection(section ConfigSection) string {
 	var s strings.Builder
-	
+
 	// Section header
 	headerStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("51"))
 	s.WriteString(headerStyle.Render(fmt.Sprintf("━━━ %s ━━━", section.String())))
 	s.WriteString("\n")
-	
+
 	// Render fields based on section
 	switch section {
 	case SectionGeneral:
@@ -848,7 +875,7 @@ func (m *configMenuModel) renderSection(section ConfigSection) string {
 	case SectionDatabase:
 		m.renderDatabaseSection(&s)
 	}
-	
+
 	return s.String()
 }
 
@@ -919,13 +946,13 @@ func (m *configMenuModel) renderRegionsSubmenu(s *strings.Builder) {
 		m.renderRegionEditor(s)
 		return
 	}
-	
+
 	hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
 	s.WriteString(hintStyle.Render("Collection regions allow fetching aircraft from multiple areas."))
 	s.WriteString("\n")
-	s.WriteString(hintStyle.Render("[SPACE] Toggle  [ENTER] Edit  [X] Delete"))
+	s.WriteString(hintStyle.Render("[SPACE] Toggle  [ENTER] Edit  [O] Set Observer  [X] Delete"))
 	s.WriteString("\n\n")
-	
+
 	for i, region := range m.cfg.ADSB.CollectionRegions {
 		checkbox := "[ ]"
 		if region.Enabled {
@@ -933,24 +960,24 @@ func (m *configMenuModel) renderRegionsSubmenu(s *strings.Builder) {
 		}
 		label := fmt.Sprintf("%s %s", checkbox, region.Name)
 		details := fmt.Sprintf("    %.4f°N, %.4f°W, Radius: %.0f NM", region.Latitude, region.Longitude, region.RadiusNM)
-		
+
 		selected := i == m.currentField
 		prefix := "  "
 		if selected {
 			prefix = "▸ "
 		}
-		
+
 		fieldStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 		if selected {
 			fieldStyle = fieldStyle.Background(lipgloss.Color("237"))
 		}
-		
+
 		s.WriteString(fieldStyle.Render(prefix + label))
 		s.WriteString("\n")
 		s.WriteString(fieldStyle.Render("  " + details))
 		s.WriteString("\n\n")
 	}
-	
+
 	// Add new region option
 	selected := m.currentField == len(m.cfg.ADSB.CollectionRegions)
 	prefix := "  "
@@ -1033,13 +1060,13 @@ func (m *configMenuModel) renderDatabaseSection(s *strings.Builder) {
 // renderField renders a single configuration field.
 func (m *configMenuModel) renderField(s *strings.Builder, fieldIndex int, label, value string, readOnly bool) {
 	selected := ConfigSection(m.currentSection) == ConfigSection(m.currentSection) && m.currentField == fieldIndex
-	
+
 	// Selection indicator
 	prefix := "  "
 	if selected {
 		prefix = "▸ "
 	}
-	
+
 	// Formatting
 	fieldStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 	if readOnly {
@@ -1048,13 +1075,13 @@ func (m *configMenuModel) renderField(s *strings.Builder, fieldIndex int, label,
 	if selected && !readOnly {
 		fieldStyle = fieldStyle.Background(lipgloss.Color("237"))
 	}
-	
+
 	// If editing this field, show edit buffer
 	displayValue := value
 	if selected && m.editing {
 		displayValue = m.editBuffer + "_"
 	}
-	
+
 	// Format line
 	line := prefix
 	if label != "" {
@@ -1062,7 +1089,7 @@ func (m *configMenuModel) renderField(s *strings.Builder, fieldIndex int, label,
 	} else {
 		line += displayValue
 	}
-	
+
 	s.WriteString(fieldStyle.Render(line))
 	s.WriteString("\n")
 }
@@ -1070,50 +1097,50 @@ func (m *configMenuModel) renderField(s *strings.Builder, fieldIndex int, label,
 // renderRegionEditor renders the region editing interface.
 func (m *configMenuModel) renderRegionEditor(s *strings.Builder) {
 	region := m.cfg.ADSB.CollectionRegions[m.currentField]
-	
+
 	hintStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
 	s.WriteString(hintStyle.Render(fmt.Sprintf("Editing Region: %s", region.Name)))
 	s.WriteString("\n\n")
-	
+
 	// Field labels and values
-	fields := []struct{
-		label string
-		value string
+	fields := []struct {
+		label       string
+		value       string
 		description string
-		example string
+		example     string
 	}{
 		{"Name", region.Name, "Region identifier", "Example: Charlotte Metro"},
 		{"Latitude", fmt.Sprintf("%.4f", region.Latitude), "Center latitude in decimal degrees", "Range: -90 to +90"},
 		{"Longitude", fmt.Sprintf("%.4f", region.Longitude), "Center longitude in decimal degrees", "Range: -180 to +180"},
 		{"Radius", fmt.Sprintf("%.1f NM", region.RadiusNM), "Collection radius in nautical miles", "Range: 1 to 500"},
 	}
-	
+
 	for i, field := range fields {
 		selected := i == m.regionEditField
-		
+
 		// Selection indicator
 		prefix := "  "
 		if selected {
 			prefix = "▸ "
 		}
-		
+
 		// Field style
 		fieldStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 		if selected {
 			fieldStyle = fieldStyle.Bold(true).Foreground(lipgloss.Color("51"))
 		}
-		
+
 		// If editing this field, show edit buffer
 		displayValue := field.value
 		if selected && m.editing {
 			displayValue = m.editBuffer + "_"
 		}
-		
+
 		// Field label and value
 		line := fmt.Sprintf("%s%s: %s", prefix, field.label, displayValue)
 		s.WriteString(fieldStyle.Render(line))
 		s.WriteString("\n")
-		
+
 		// Show tooltip for selected field
 		if selected {
 			tooltipStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
@@ -1124,7 +1151,7 @@ func (m *configMenuModel) renderRegionEditor(s *strings.Builder) {
 			s.WriteString(tooltipStyle.Render("• " + field.example))
 			s.WriteString("\n")
 		}
-		
+
 		s.WriteString("\n")
 	}
 }
@@ -1132,13 +1159,13 @@ func (m *configMenuModel) renderRegionEditor(s *strings.Builder) {
 // renderFieldWithTooltip renders a field with description and example tooltip.
 func (m *configMenuModel) renderFieldWithTooltip(s *strings.Builder, fieldIndex int, label, value, description, example string, readOnly bool) {
 	selected := m.currentField == fieldIndex
-	
+
 	// Selection indicator
 	prefix := "  "
 	if selected {
 		prefix = "▸ "
 	}
-	
+
 	// Field style
 	fieldStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 	if readOnly {
@@ -1147,18 +1174,18 @@ func (m *configMenuModel) renderFieldWithTooltip(s *strings.Builder, fieldIndex 
 	if selected && !readOnly {
 		fieldStyle = fieldStyle.Bold(true).Foreground(lipgloss.Color("51"))
 	}
-	
+
 	// If editing this field, show edit buffer
 	displayValue := value
 	if selected && m.editing {
 		displayValue = m.editBuffer + "_"
 	}
-	
+
 	// Field label and value
 	line := fmt.Sprintf("%s%s: %s", prefix, label, displayValue)
 	s.WriteString(fieldStyle.Render(line))
 	s.WriteString("\n")
-	
+
 	// Show tooltip for selected field
 	if selected {
 		tooltipStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Italic(true)
@@ -1169,6 +1196,6 @@ func (m *configMenuModel) renderFieldWithTooltip(s *strings.Builder, fieldIndex 
 		s.WriteString(tooltipStyle.Render("• " + example))
 		s.WriteString("\n")
 	}
-	
+
 	s.WriteString("\n")
 }

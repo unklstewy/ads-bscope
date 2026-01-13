@@ -71,7 +71,7 @@ func main() {
 	var targetICAO string
 	if *icao == "" {
 		log.Printf("No ICAO specified, searching for aircraft within %.0fnm...", *radius)
-		
+
 		aircraft, err := adsbClient.GetAircraft(
 			cfg.Observer.Latitude,
 			cfg.Observer.Longitude,
@@ -91,7 +91,7 @@ func main() {
 		// Use prediction to match tracking loop behavior
 		log.Println("\nFiltering for trackable aircraft...")
 		trackable, filtered := filterTrackableAircraftWithReason(aircraft, observer, minAlt, maxAlt, time.Now().UTC(), 2.5)
-		
+
 		// Show why aircraft were filtered out
 		if len(filtered) > 0 {
 			log.Printf("Excluded %d aircraft:", len(filtered))
@@ -103,7 +103,7 @@ func main() {
 				log.Printf("  ✗ %s (%s) - %s", f.Aircraft.Callsign, f.Aircraft.ICAO, f.Reason)
 			}
 		}
-		
+
 		if len(trackable) == 0 {
 			log.Println("\n❌ No trackable aircraft found.")
 			log.Fatalf("Try increasing search radius (--radius) or adjusting telescope altitude limits")
@@ -148,7 +148,7 @@ func main() {
 	if !*dryRun {
 		telescopeClient = alpaca.NewClient(cfg.Telescope)
 		log.Printf("Connecting to telescope at %s...", cfg.Telescope.BaseURL)
-		
+
 		if err := telescopeClient.Connect(); err != nil {
 			log.Fatalf("Failed to connect to telescope: %v", err)
 		}
@@ -156,7 +156,7 @@ func main() {
 			log.Println("Disconnecting from telescope...")
 			telescopeClient.Disconnect()
 		}()
-		
+
 		log.Println("✓ Telescope connected")
 	} else {
 		log.Println("DRY RUN MODE: Telescope commands will be simulated")
@@ -175,7 +175,7 @@ func main() {
 	if rateLimitDuration == 0 {
 		rateLimitDuration = time.Second // Default to 1 second if not configured
 	}
-	
+
 	// Ensure update interval respects rate limit
 	updateInterval := time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second
 	if updateInterval < rateLimitDuration {
@@ -209,7 +209,7 @@ func main() {
 		// Fetch aircraft data
 		aircraft, err := adsbClient.GetAircraftByICAO(targetICAO)
 		lastAPICall = time.Now()
-		
+
 		if err != nil {
 			log.Printf("Warning: Failed to fetch aircraft data: %v", err)
 			<-ticker.C
@@ -230,7 +230,7 @@ func main() {
 		}
 
 		now := time.Now().UTC()
-		
+
 		// Predict position accounting for latency (2.5s for online sources)
 		predicted := tracking.PredictPositionWithLatency(*aircraft, 2.5)
 
@@ -353,10 +353,10 @@ func formatDuration(d time.Duration) string {
 	if d == 0 {
 		return "now"
 	}
-	
+
 	minutes := int(d.Minutes())
 	seconds := int(d.Seconds()) % 60
-	
+
 	if minutes > 0 {
 		return fmt.Sprintf("%dm %ds", minutes, seconds)
 	}
@@ -382,7 +382,7 @@ func filterTrackableAircraftWithReason(
 ) ([]adsb.Aircraft, []FilteredAircraft) {
 	var trackable []adsb.Aircraft
 	var filtered []FilteredAircraft
-	
+
 	for _, ac := range aircraft {
 		// Skip aircraft without valid position
 		if ac.Latitude == 0 && ac.Longitude == 0 {
@@ -392,7 +392,7 @@ func filterTrackableAircraftWithReason(
 			})
 			continue
 		}
-		
+
 		// Skip aircraft on ground (altitude = 0 or negative)
 		if ac.Altitude <= 0 {
 			filtered = append(filtered, FilteredAircraft{
@@ -401,13 +401,13 @@ func filterTrackableAircraftWithReason(
 			})
 			continue
 		}
-		
+
 		// Predict position to match tracking loop behavior
 		predicted := tracking.PredictPositionWithLatency(ac, predictionLatency)
-		
+
 		// Convert predicted position to horizontal coordinates
 		horiz := coordinates.GeographicToHorizontal(predicted.Position, observer, now)
-		
+
 		// Check if within altitude limits (visible range)
 		if horiz.Altitude < minAlt {
 			filtered = append(filtered, FilteredAircraft{
@@ -423,10 +423,10 @@ func filterTrackableAircraftWithReason(
 			})
 			continue
 		}
-		
+
 		// Aircraft is trackable
 		trackable = append(trackable, ac)
 	}
-	
+
 	return trackable, filtered
 }

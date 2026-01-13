@@ -367,7 +367,7 @@ func predictAlongGreatCircle(
 	if fraction >= 1.0 {
 		// Calculate confidence - reduces as we extrapolate beyond waypoint
 		confidence := math.Max(0.3, 1.0-(fraction-1.0)*0.5)
-		
+
 		// Reduce confidence based on track error
 		confidence *= (1.0 - trackError/90.0)
 
@@ -403,7 +403,7 @@ func predictAlongGreatCircle(
 	// Starts at 0.95 (better than dead reckoning's 1.0 due to realism)
 	// Decreases with time and track error
 	confidence := 0.95 - (deltaT / 120.0) // 0.95 at 0s, 0.45 at 60s
-	confidence *= (1.0 - trackError/90.0)  // Reduce if not well aligned
+	confidence *= (1.0 - trackError/90.0) // Reduce if not well aligned
 	confidence = math.Max(0.3, math.Min(0.95, confidence))
 
 	return PredictedPosition{
@@ -504,14 +504,14 @@ func DeterminePassedWaypoints(aircraft adsb.Aircraft, waypoints []Waypoint) []Wa
 
 // AirwaySegment represents a segment of an airway for prediction.
 type AirwaySegment struct {
-	AirwayID     string
-	AirwayType   string
-	FromLat      float64
-	FromLon      float64
-	ToLat        float64
-	ToLon        float64
-	MinAltitude  int
-	MaxAltitude  int
+	AirwayID    string
+	AirwayType  string
+	FromLat     float64
+	FromLon     float64
+	ToLat       float64
+	ToLon       float64
+	MinAltitude int
+	MaxAltitude int
 }
 
 // MatchAirway finds the best matching airway for an aircraft.

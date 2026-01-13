@@ -25,10 +25,10 @@ func main() {
 
 	fmt.Println("===========================================")
 	fmt.Println("  NASR Data Verification")
-	fmt.Println("===========================================\n")
+	fmt.Println("===========================================")
 
 	// Count waypoints by type
-	rows, err := database.QueryContext(ctx, 
+	rows, err := database.QueryContext(ctx,
 		"SELECT type, COUNT(*) FROM waypoints GROUP BY type ORDER BY COUNT(*) DESC")
 	if err != nil {
 		log.Fatalf("Failed to query waypoints: %v", err)
@@ -49,7 +49,7 @@ func main() {
 
 	// Count airways
 	var airwayCount int
-	err = database.QueryRowContext(ctx, 
+	err = database.QueryRowContext(ctx,
 		"SELECT COUNT(DISTINCT identifier) FROM airways").Scan(&airwayCount)
 	if err != nil {
 		log.Fatalf("Failed to query airways: %v", err)
@@ -89,7 +89,7 @@ func checkWaypoint(database *db.DB, ctx context.Context, id string) {
 	err := database.QueryRowContext(ctx,
 		"SELECT COALESCE(name, ''), type, latitude, longitude FROM waypoints WHERE identifier = $1 LIMIT 1",
 		id).Scan(&name, &wType, &lat, &lon)
-	
+
 	if err != nil {
 		fmt.Printf("  ✗ %s not found\n", id)
 	} else {

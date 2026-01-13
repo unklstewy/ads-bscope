@@ -1,12 +1,14 @@
 # Git
 .git
 .gitignore
+.gitattributes
 
 # Documentation
 README.md
 INITSTATE.MD
 WARP.md
 *.md
+!configs/*.md
 
 # Build artifacts
 bin/
@@ -16,29 +18,63 @@ bin/
 *.dylib
 
 # Test files
+*_test.go
 *.test
 *.out
+coverage/
 coverage.*
 *.coverprofile
+test/
+testdata/
 
-# IDE
+# IDE and editor files
 .idea/
 .vscode/
 *.swp
 *.swo
+*.swn
+*~
+.DS_Store
 
-# Environment
+# Environment and secrets
 .env
-.env.local
+.env.*
+!.env.example
+*.key
+*.pem
+*.crt
+*.cert
 
 # Docker
-Dockerfile
+Dockerfile*
+!Dockerfile
 .dockerignore
-docker-compose.yml
+docker-compose*.yml
+!docker-compose.yml
 
 # CI/CD
 .github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# Logs
+logs/
+*.log
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+
+# Go-specific
+vendor/
+go.work
+go.work.sum
+
+# Makefile (not needed in container)
+Makefile
+
+# Scripts (may contain development-only scripts)
+scripts/
+!scripts/db/

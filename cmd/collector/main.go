@@ -103,16 +103,16 @@ func main() {
 
 	// Start collector
 	collector := &Collector{
-		repo:             repo,
-		db:               database,
-		adsbClient:       adsbClient,
-		observer:         observer,
+		repo:              repo,
+		db:                database,
+		adsbClient:        adsbClient,
+		observer:          observer,
 		collectionRegions: collectionRegions,
-		minAlt:           minAlt,
-		maxAlt:           maxAlt,
-		updateInterval:   time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second,
-		rateLimit:        time.Duration(source.RateLimitSeconds * float64(time.Second)),
-		regionStats:      make(map[string]*RegionStats),
+		minAlt:            minAlt,
+		maxAlt:            maxAlt,
+		updateInterval:    time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second,
+		rateLimit:         time.Duration(source.RateLimitSeconds * float64(time.Second)),
+		regionStats:       make(map[string]*RegionStats),
 	}
 
 	// Setup graceful shutdown
@@ -122,15 +122,35 @@ func main() {
 	// Start collection loop in goroutine
 	doneChan := make(chan struct{})
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("PANIC in collector goroutine: %v", r)
+				log.Println("Collector will attempt to restart...")
+				// Attempt to restart collector after panic
+				time.Sleep(5 * time.Second)
+				go func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("PANIC in collector restart: %v", r)
+							log.Println("Collector cannot recover, shutting down")
+							close(doneChan)
+						}
+					}()
+					collector.Run(ctx)
+					close(doneChan)
+				}()
+				return
+			}
+			close(doneChan)
+		}()
 		collector.Run(ctx)
-		close(doneChan)
 	}()
 
 	log.Println("\n===========================================")
 	log.Println("  Collector service started")
 	log.Println("  Initializing dataset...")
 	log.Println("  Press Ctrl+C to stop")
-	log.Println("===========================================\n")
+	log.Println("===========================================")
 
 	// Wait for shutdown signal
 	select {
@@ -163,12 +183,12 @@ type Collector struct {
 	maxAlt            float64
 	updateInterval    time.Duration
 	rateLimit         time.Duration
-	
+
 	// Statistics
-	regionStats       map[string]*RegionStats
-	totalUpdates      int
-	totalAircraft     int
-	lastUpdateTime    time.Time
+	regionStats    map[string]*RegionStats
+	totalUpdates   int
+	totalAircraft  int
+	lastUpdateTime time.Time
 }
 
 // Run starts the collection loop.
@@ -205,9 +225,23 @@ func (c *Collector) Run(ctx context.Context) {
 
 // update fetches aircraft data from all enabled regions and stores in database.
 func (c *Collector) update(ctx context.Context) {
+	// Nil check for critical components
+	if c == nil || c.repo == nil || c.db == nil || c.adsbClient == nil {
+		log.Println("Error: Collector or critical components are nil, skipping update")
+		return
+	}
+
+	// Panic recovery for update function
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("PANIC in update(): %v", r)
+			log.Println("Update will be retried on next cycle")
+		}
+	}()
+
 	now := time.Now().UTC()
 	c.totalUpdates++
-	
+
 	// Collect aircraft from all enabled regions
 	type aircraftWithRegion struct {
 		aircraft   adsb.Aircraft
@@ -215,19 +249,19 @@ func (c *Collector) update(ctx context.Context) {
 	}
 	allAircraft := make(map[string]aircraftWithRegion) // ICAO -> Aircraft+Region (deduplication)
 	regionCount := 0
-	
+
 	for _, region := range c.collectionRegions {
 		if !region.Enabled {
 			continue
 		}
-		
+
 		// Fetch aircraft for this region
 		aircraft, err := c.fetchRegion(ctx, region)
 		if err != nil {
 			log.Printf("Error fetching region %s: %v", region.Name, err)
 			continue
 		}
-		
+
 		// Update region stats
 		if c.regionStats[region.Name] == nil {
 			c.regionStats[region.Name] = &RegionStats{}
@@ -236,7 +270,7 @@ func (c *Collector) update(ctx context.Context) {
 		stats.Fetched = len(aircraft)
 		stats.LastUpdate = now
 		stats.TotalUpdates++
-		
+
 		// Merge into global collection (deduplicate by ICAO)
 		// If aircraft seen in multiple regions, use first region for now
 		// (could be enhanced to track multiple regions per aircraft)
@@ -252,15 +286,15 @@ func (c *Collector) update(ctx context.Context) {
 				}
 			}
 		}
-		
+
 		regionCount++
-		
+
 		// Rate limit between regions
 		if regionCount < len(c.collectionRegions) {
 			time.Sleep(c.rateLimit)
 		}
 	}
-	
+
 	// Store deduplicated aircraft with region tracking
 	stored := 0
 	for _, acWithRegion := range allAircraft {
@@ -270,20 +304,20 @@ func (c *Collector) update(ctx context.Context) {
 		}
 		stored++
 	}
-	
+
 	// Update region stats with stored count
 	for _, stats := range c.regionStats {
 		stats.Stored = stored // Simplified: all regions contribute to total
 	}
-	
+
 	// Update trackable status for all aircraft
 	if err := c.repo.UpdateTrackableStatus(ctx, c.minAlt, c.maxAlt); err != nil {
 		log.Printf("Error updating trackable status: %v", err)
 	}
-	
+
 	c.lastUpdateTime = now
 	c.totalAircraft = len(allAircraft)
-	
+
 	log.Printf("[%s] Update #%d: %d regions, %d unique aircraft, %d stored",
 		now.Format("15:04:05"), c.totalUpdates, regionCount, len(allAircraft), stored)
 }
@@ -298,12 +332,25 @@ func (c *Collector) fetchRegion(ctx context.Context, region config.CollectionReg
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return aircraft, nil
 }
 
 // cleanup removes stale aircraft and old position history.
 func (c *Collector) cleanup(ctx context.Context) {
+	// Nil check
+	if c == nil || c.db == nil {
+		log.Println("Error: Collector or database is nil, skipping cleanup")
+		return
+	}
+
+	// Panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("PANIC in cleanup(): %v", r)
+		}
+	}()
+
 	// Mark aircraft not seen in 2 minutes as not visible
 	if err := c.db.CleanupOldData(ctx, 2*time.Minute); err != nil {
 		log.Printf("Error during cleanup: %v", err)
@@ -315,10 +362,29 @@ func (c *Collector) cleanup(ctx context.Context) {
 
 // printStats displays current statistics.
 func (c *Collector) printStats(ctx context.Context) {
+	// Nil check
+	if c == nil || c.db == nil {
+		log.Println("Error: Collector or database is nil, skipping stats")
+		return
+	}
+
+	// Panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("PANIC in printStats(): %v", r)
+		}
+	}()
+
 	stats, err := c.db.GetStats(ctx)
 	if err != nil {
 		log.Printf("Error getting stats: %v", err)
 		return
+	}
+
+	// Nil check for stats map
+	if stats == nil {
+		log.Println("Warning: Stats returned nil, using zeros")
+		stats = make(map[string]interface{})
 	}
 
 	log.Printf("📊 Stats: %d visible, %d trackable, %d approaching | %d positions stored | %d total updates",

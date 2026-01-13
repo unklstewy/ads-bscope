@@ -66,7 +66,7 @@ func main() {
 	log.Println("\n===========================================")
 	log.Println("Importing Airports")
 	log.Println("===========================================")
-	
+
 	aptCount, err := importer.ImportAirports(ctx)
 	if err != nil {
 		log.Printf("Warning: Failed to import airports: %v", err)
@@ -78,7 +78,7 @@ func main() {
 	log.Println("\n===========================================")
 	log.Println("Importing Waypoints")
 	log.Println("===========================================")
-	
+
 	fixCount, err := importer.ImportFixes(ctx)
 	if err != nil {
 		log.Printf("Warning: Failed to import fixes: %v", err)
@@ -97,7 +97,7 @@ func main() {
 	log.Println("\n===========================================")
 	log.Println("Importing Airways")
 	log.Println("===========================================")
-	
+
 	awyCount, err := importer.ImportAirways(ctx)
 	if err != nil {
 		log.Printf("Warning: Failed to import airways: %v", err)
@@ -133,37 +133,37 @@ func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
 
 	count := 0
 	scanner := bufio.NewScanner(file)
-	
+
 	// Skip header line
 	if scanner.Scan() {
 		scanner.Text()
 	}
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		fields := parseCSVLine(line)
-		
+
 		// OurAirports CSV format:
 		// 0: id, 1: ident, 2: type, 3: name, 4: latitude_deg, 5: longitude_deg,
 		// 6: elevation_ft, 7: continent, 8: iso_country, 9: iso_region, ...
 		if len(fields) < 10 {
 			continue
 		}
-		
+
 		ident := strings.TrimSpace(fields[1])
 		apt_type := strings.TrimSpace(fields[2])
 		name := strings.TrimSpace(fields[3])
 		latStr := strings.TrimSpace(fields[4])
 		lonStr := strings.TrimSpace(fields[5])
 		region := strings.TrimSpace(fields[9])
-		
+
 		// Filter: only import airports (not heliports, seaplane bases, etc.)
 		// and prioritize US airports
-		if apt_type != "small_airport" && apt_type != "medium_airport" && 
-		   apt_type != "large_airport" {
+		if apt_type != "small_airport" && apt_type != "medium_airport" &&
+			apt_type != "large_airport" {
 			continue
 		}
-		
+
 		// Parse coordinates
 		lat, err := strconv.ParseFloat(latStr, 64)
 		if err != nil {
@@ -173,7 +173,7 @@ func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
 		if err != nil {
 			continue
 		}
-		
+
 		// Extract region code (e.g., "US-NC" -> "NC")
 		regionCode := region
 		if len(region) > 3 && region[2] == '-' {
@@ -181,7 +181,7 @@ func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
 		} else if len(region) > 2 {
 			regionCode = region[:2]
 		}
-		
+
 		// Insert airport as waypoint with type "airport"
 		_, err = i.db.ExecContext(ctx,
 			`INSERT INTO waypoints (identifier, name, latitude, longitude, type, region)
@@ -196,13 +196,13 @@ func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
 			log.Printf("Warning: Failed to insert airport %s: %v", ident, err)
 			continue
 		}
-		
+
 		count++
 		if count%500 == 0 {
 			log.Printf("  Imported %d airports...", count)
 		}
 	}
-	
+
 	return count, scanner.Err()
 }
 
@@ -211,10 +211,10 @@ func parseCSVLine(line string) []string {
 	var fields []string
 	var current strings.Builder
 	inQuote := false
-	
+
 	for i := 0; i < len(line); i++ {
 		ch := line[i]
-		
+
 		switch ch {
 		case '"':
 			inQuote = !inQuote
@@ -229,7 +229,7 @@ func parseCSVLine(line string) []string {
 			current.WriteByte(ch)
 		}
 	}
-	
+
 	// Add last field
 	fields = append(fields, current.String())
 	return fields
@@ -246,7 +246,7 @@ func (i *NASRImporter) ImportFixes(ctx context.Context) (int, error) {
 
 	count := 0
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(line) < 100 {
@@ -309,7 +309,7 @@ func (i *NASRImporter) ImportNavaids(ctx context.Context) (int, error) {
 
 	count := 0
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(line) < 100 {
@@ -381,7 +381,7 @@ func (i *NASRImporter) ImportAirways(ctx context.Context) (int, error) {
 
 	count := 0
 	scanner := bufio.NewScanner(file)
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if len(line) < 100 {
@@ -397,7 +397,7 @@ func (i *NASRImporter) ImportAirways(ctx context.Context) (int, error) {
 		airwayID := strings.TrimSpace(line[4:9])
 		sequenceStr := strings.TrimSpace(line[9:14])
 		waypointID := strings.TrimSpace(line[15:45])
-		
+
 		sequence, err := strconv.Atoi(sequenceStr)
 		if err != nil {
 			continue
@@ -419,7 +419,7 @@ func (i *NASRImporter) ImportAirways(ctx context.Context) (int, error) {
 			`SELECT id FROM waypoints WHERE identifier = $1 LIMIT 1`,
 			waypointID,
 		).Scan(&waypointDBID)
-		
+
 		if err != nil {
 			// Waypoint not found - skip this airway segment
 			continue

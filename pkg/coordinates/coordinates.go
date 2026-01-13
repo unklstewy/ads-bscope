@@ -172,12 +172,12 @@ func Bearing(from, to Geographic) float64 {
 	y := math.Sin(dLon) * math.Cos(lat2)
 	x := math.Cos(lat1)*math.Sin(lat2) - math.Sin(lat1)*math.Cos(lat2)*math.Cos(dLon)
 	bearing := math.Atan2(y, x) * RadiansToDegrees
-	
+
 	// Normalize to 0-360
 	if bearing < 0 {
 		bearing += 360
 	}
-	
+
 	return bearing
 }
 

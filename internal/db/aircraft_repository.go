@@ -56,7 +56,7 @@ func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.A
 
 	rangeNM := coordinates.DistanceNauticalMiles(r.observer.Location, acPos)
 	horiz := coordinates.GeographicToHorizontal(acPos, r.observer, now)
-	
+
 	// Calculate approach information
 	closestRange, timeToClosest, approaching := coordinates.EstimateTimeToClosestApproach(
 		r.observer.Location, acPos, aircraft.GroundSpeed, aircraft.Track,
@@ -142,14 +142,14 @@ func (r *AircraftRepository) insertPositionHistory(
 	horiz coordinates.HorizontalCoordinates,
 ) error {
 	var (
-		deltaTime         sql.NullFloat64
-		deltaDistance     sql.NullFloat64
-		deltaAltitude     sql.NullFloat64
-		deltaTrack        sql.NullFloat64
-		actualSpeed       sql.NullFloat64
+		deltaTime          sql.NullFloat64
+		deltaDistance      sql.NullFloat64
+		deltaAltitude      sql.NullFloat64
+		deltaTrack         sql.NullFloat64
+		actualSpeed        sql.NullFloat64
 		actualVerticalRate sql.NullFloat64
 	)
-	
+
 	// Check if position has changed since last update
 	if prevPos != nil {
 		// Skip insertion if position is unchanged (common for grounded aircraft)
@@ -243,17 +243,17 @@ func positionsEqual(current adsb.Aircraft, prev aircraftPosition) bool {
 	const altitudeTolerance = 1.0
 	// Speed threshold: Consider stationary if <1 knot
 	const speedThreshold = 1.0
-	
+
 	// Check if lat/lon unchanged
 	latChanged := math.Abs(current.Latitude-prev.Latitude) > positionTolerance
 	lonChanged := math.Abs(current.Longitude-prev.Longitude) > positionTolerance
-	
+
 	// Check if altitude changed
 	altChanged := math.Abs(current.Altitude-prev.AltitudeFt) > altitudeTolerance
-	
+
 	// Check if aircraft is moving (either current or previous speed >1 knot)
 	isMoving := current.GroundSpeed >= speedThreshold || prev.GroundSpeedKts >= speedThreshold
-	
+
 	// Position is considered equal if:
 	// - Lat/lon unchanged AND altitude unchanged AND not moving
 	// This allows position updates for:
@@ -486,21 +486,21 @@ func (r *AircraftRepository) GetPositionHistory(
 
 // Position represents a historical aircraft position with deltas.
 type Position struct {
-	Timestamp            time.Time
-	Latitude             float64
-	Longitude            float64
-	AltitudeFt           float64
-	GroundSpeedKts       float64
-	TrackDeg             float64
-	VerticalRateFpm      float64
-	DeltaTimeSeconds     float64
-	DeltaDistanceNM      float64
-	DeltaAltitudeFt      float64
-	ActualSpeedKts       float64
+	Timestamp             time.Time
+	Latitude              float64
+	Longitude             float64
+	AltitudeFt            float64
+	GroundSpeedKts        float64
+	TrackDeg              float64
+	VerticalRateFpm       float64
+	DeltaTimeSeconds      float64
+	DeltaDistanceNM       float64
+	DeltaAltitudeFt       float64
+	ActualSpeedKts        float64
 	ActualVerticalRateFpm float64
-	RangeNM              float64
-	AltitudeAngleDeg     float64
-	AzimuthDeg           float64
+	RangeNM               float64
+	AltitudeAngleDeg      float64
+	AzimuthDeg            float64
 }
 
 // CalculateAverageVelocity calculates average velocity from position history.
