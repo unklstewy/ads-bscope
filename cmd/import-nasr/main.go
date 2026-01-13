@@ -155,7 +155,6 @@ func (i *NASRImporter) ImportAirports(ctx context.Context) (int, error) {
 		name := strings.TrimSpace(fields[3])
 		latStr := strings.TrimSpace(fields[4])
 		lonStr := strings.TrimSpace(fields[5])
-		country := strings.TrimSpace(fields[8])
 		region := strings.TrimSpace(fields[9])
 		
 		// Filter: only import airports (not heliports, seaplane bases, etc.)
