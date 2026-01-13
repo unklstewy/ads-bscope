@@ -40,6 +40,7 @@
       }
     ],
     "search_radius_nm": 50.0,
+    "max_collection_radius_nm": 200.0,
     "update_interval_seconds": 15
   },
   "observer": {
@@ -49,8 +50,8 @@
     "timezone": "America/New_York"
   },
   "flightaware": {
-    "api_key": "bezw1bcZFenY2RChFTtv8IkoFuS49Ggj",
-    "enabled": true,
+    "api_key": "no-such-api-key-here",
+    "enabled": false,
     "requests_per_hour": 10,
     "auto_fetch_enabled": true,
     "fetch_interval_minutes": 60

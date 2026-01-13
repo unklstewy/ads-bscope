@@ -19,8 +19,8 @@ import (
 	"github.com/unklstewy/ads-bscope/pkg/tracking"
 )
 
-// Sky viewport dimensions
-const (
+// Sky viewport dimensions (will be dynamically sized based on terminal)
+var (
 	skyWidth  = 80
 	skyHeight = 30
 )
@@ -57,6 +57,8 @@ type model struct {
 	radarAirport string
 	inputMode    string  // "airport" or "radius" or ""
 	inputBuffer  string
+	width        int     // Terminal width
+	height       int     // Terminal height
 }
 
 type aircraftView struct {
@@ -84,6 +86,12 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Update terminal dimensions
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
+	
 	case tea.KeyMsg:
 		// Handle input mode (airport code or radius entry)
 		if m.inputMode != "" {
@@ -163,15 +171,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = nil
 			}
 		case "up", "k":
-			if !m.radarMode && m.selected > 0 {
+			if m.selected > 0 {
 				m.selected--
 			}
 		case "down", "j":
-			if !m.radarMode && m.selected < len(m.aircraft)-1 {
+			if m.selected < len(m.aircraft)-1 {
 				m.selected++
 			}
 		case "enter", " ":
-			if !m.radarMode && len(m.aircraft) > 0 && m.selected < len(m.aircraft) {
+			if len(m.aircraft) > 0 && m.selected < len(m.aircraft) {
 				m.tracking = true
 				m.trackICAO = m.aircraft[m.selected].aircraft.ICAO
 				m.telesAlt = m.aircraft[m.selected].horiz.Altitude
@@ -229,8 +237,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) updateAircraft() {
 	ctx := context.Background()
 	
-	// Get all trackable aircraft from database
-	aircraftList, err := m.repo.GetTrackableAircraft(ctx)
+	// Get aircraft from database based on mode
+	var aircraftList []adsb.Aircraft
+	var err error
+	
+	if m.radarMode && m.radarCenter.Latitude != 0 && m.radarCenter.Longitude != 0 {
+		// Radar mode: fetch aircraft near radar center
+		aircraftList, err = m.repo.GetAircraftNear(
+			ctx,
+			m.radarCenter.Latitude,
+			m.radarCenter.Longitude,
+			m.radarRadius,
+			m.minAlt,
+			m.maxAlt,
+		)
+	} else {
+		// Sky view mode: use observer-relative trackable aircraft
+		aircraftList, err = m.repo.GetTrackableAircraft(ctx)
+	}
+	
 	if err != nil {
 		m.err = err
 		return
@@ -892,6 +917,8 @@ func main() {
 		zoom:        1.0, // Normal zoom
 		trails:      make(map[string]*trackTrail),
 		radarRadius: 100.0, // Default radar radius 100 NM
+		width:       80,  // Default width (will be updated on first render)
+		height:      30,  // Default height (will be updated on first render)
 	}
 
 	// Initial data load

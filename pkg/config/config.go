@@ -117,7 +117,15 @@ type ADSBConfig struct {
 	Sources []ADSBSource `json:"sources"`
 
 	// SearchRadiusNM is the default search radius in nautical miles
+	// Used for default TUI zoom and backward compatibility
 	SearchRadiusNM float64 `json:"search_radius_nm"`
+
+	// MaxCollectionRadiusNM is the maximum radius for collecting aircraft data
+	// The collector fetches all aircraft within this radius of the observer location
+	// This allows TUI radar mode to display aircraft centered on different airports
+	// Recommended: 100-250 NM for regional coverage without excessive API usage
+	// If 0 or not specified, defaults to SearchRadiusNM for backward compatibility
+	MaxCollectionRadiusNM float64 `json:"max_collection_radius_nm"`
 
 	// UpdateIntervalSeconds is how often to refresh aircraft data
 	UpdateIntervalSeconds int `json:"update_interval_seconds"`
@@ -279,6 +287,7 @@ func DefaultConfig() *Config {
 				},
 			},
 			SearchRadiusNM:        50.0,
+			MaxCollectionRadiusNM: 200.0, // Collect from larger region for multi-airport support
 			UpdateIntervalSeconds: 2,
 		},
 		Observer: ObserverConfig{

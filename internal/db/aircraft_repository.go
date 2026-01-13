@@ -288,6 +288,7 @@ func (r *AircraftRepository) UpdateTrackableStatus(
 }
 
 // GetTrackableAircraft returns all currently trackable aircraft.
+// This uses the observer location configured in the repository.
 func (r *AircraftRepository) GetTrackableAircraft(ctx context.Context) ([]adsb.Aircraft, error) {
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT icao, callsign, latitude, longitude, altitude_ft,
@@ -317,6 +318,80 @@ func (r *AircraftRepository) GetTrackableAircraft(ctx context.Context) ([]adsb.A
 	}
 
 	return aircraft, rows.Err()
+}
+
+// GetAircraftNear returns aircraft within a specified radius of an arbitrary center point.
+// This enables radar mode centered on any airport or location, not just the observer.
+// Only returns visible aircraft with valid positions.
+func (r *AircraftRepository) GetAircraftNear(
+	ctx context.Context,
+	centerLat, centerLon, radiusNM, minAlt, maxAlt float64,
+) ([]adsb.Aircraft, error) {
+	// Fetch all visible aircraft
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT icao, callsign, latitude, longitude, altitude_ft,
+		        ground_speed_kts, track_deg, vertical_rate_fpm, last_seen
+		 FROM aircraft
+		 WHERE is_visible = TRUE AND altitude_ft > 0
+		   AND latitude IS NOT NULL AND longitude IS NOT NULL`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Filter by distance from center point
+	centerPos := coordinates.Geographic{
+		Latitude:  centerLat,
+		Longitude: centerLon,
+		Altitude:  0,
+	}
+
+	var aircraft []adsb.Aircraft
+	for rows.Next() {
+		var ac adsb.Aircraft
+		err := rows.Scan(
+			&ac.ICAO, &ac.Callsign,
+			&ac.Latitude, &ac.Longitude, &ac.Altitude,
+			&ac.GroundSpeed, &ac.Track, &ac.VerticalRate,
+			&ac.LastSeen,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// Calculate distance from center point
+		acPos := coordinates.Geographic{
+			Latitude:  ac.Latitude,
+			Longitude: ac.Longitude,
+			Altitude:  ac.Altitude * coordinates.FeetToMeters,
+		}
+		distanceNM := coordinates.DistanceNauticalMiles(centerPos, acPos)
+
+		// Check if within radius
+		if distanceNM > radiusNM {
+			continue
+		}
+
+		// Calculate altitude angle from center (for altitude filtering)
+		// Use current time for calculation
+		horiz := coordinates.GeographicToHorizontal(acPos, coordinates.Observer{
+			Location: centerPos,
+		}, time.Now().UTC())
+
+		// Check altitude limits
+		if horiz.Altitude < minAlt || horiz.Altitude > maxAlt {
+			continue
+		}
+
+		aircraft = append(aircraft, ac)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return aircraft, nil
 }
 
 // GetAircraftByICAO retrieves an aircraft by ICAO code.

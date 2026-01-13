@@ -32,10 +32,23 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	// Determine collection radius (with backward compatibility)
+	collectionRadius := cfg.ADSB.MaxCollectionRadiusNM
+	if collectionRadius == 0 {
+		// Backward compatibility: use SearchRadiusNM if MaxCollectionRadiusNM not set
+		collectionRadius = cfg.ADSB.SearchRadiusNM
+	}
+
 	log.Printf("Configuration loaded from: %s", *configPath)
 	log.Printf("Observer location: %.4f°N, %.4f°W, %.0fm MSL",
 		cfg.Observer.Latitude, cfg.Observer.Longitude, cfg.Observer.Elevation)
-	log.Printf("Search radius: %.0f nm", cfg.ADSB.SearchRadiusNM)
+	log.Printf("Collection radius: %.0f nm", collectionRadius)
+	if collectionRadius != cfg.ADSB.SearchRadiusNM {
+		log.Printf("  (expanded from default %.0f nm for multi-airport coverage)", cfg.ADSB.SearchRadiusNM)
+	}
+	if collectionRadius > 250 {
+		log.Printf("  ⚠️  WARNING: Large collection radius (>250 nm) may cause API rate limit issues")
+	}
 	log.Printf("Update interval: %d seconds", cfg.ADSB.UpdateIntervalSeconds)
 
 	// Get telescope limits
@@ -85,13 +98,14 @@ func main() {
 
 	// Start collector
 	collector := &Collector{
-		repo:         repo,
-		db:           database,
-		adsbClient:   adsbClient,
-		observer:     observer,
-		searchRadius: cfg.ADSB.SearchRadiusNM,
-		minAlt:       minAlt,
-		maxAlt:       maxAlt,
+		repo:           repo,
+		db:             database,
+		adsbClient:     adsbClient,
+		observer:       observer,
+		searchRadius:   cfg.ADSB.SearchRadiusNM, // Keep for reference
+		collectionRadius: collectionRadius,        // Use for actual collection
+		minAlt:         minAlt,
+		maxAlt:         maxAlt,
 		updateInterval: time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second,
 		rateLimit:      time.Duration(source.RateLimitSeconds * float64(time.Second)),
 	}
@@ -127,15 +141,16 @@ func main() {
 
 // Collector manages the aircraft data collection process.
 type Collector struct {
-	repo           *db.AircraftRepository
-	db             *db.DB
-	adsbClient     *adsb.AirplanesLiveClient
-	observer       coordinates.Observer
-	searchRadius   float64
-	minAlt         float64
-	maxAlt         float64
-	updateInterval time.Duration
-	rateLimit      time.Duration
+	repo             *db.AircraftRepository
+	db               *db.DB
+	adsbClient       *adsb.AirplanesLiveClient
+	observer         coordinates.Observer
+	searchRadius     float64 // Default radius for backward compatibility
+	collectionRadius float64 // Actual radius used for collection
+	minAlt           float64
+	maxAlt           float64
+	updateInterval   time.Duration
+	rateLimit        time.Duration
 	
 	// Statistics
 	totalUpdates    int
@@ -180,11 +195,11 @@ func (c *Collector) Run(ctx context.Context) {
 func (c *Collector) update(ctx context.Context) {
 	now := time.Now().UTC()
 	
-	// Fetch aircraft from API
+	// Fetch aircraft from API using collection radius
 	aircraft, err := c.adsbClient.GetAircraft(
 		c.observer.Location.Latitude,
 		c.observer.Location.Longitude,
-		c.searchRadius,
+		c.collectionRadius,
 	)
 	if err != nil {
 		log.Printf("Error fetching aircraft: %v", err)
