@@ -1,7 +1,7 @@
 .PHONY: help build run stop restart logs clean test fmt lint vet \
         test-coverage test-unit test-integration test-all coverage-report \
         build-collector build-fetch-flightplans build-verify-nasr build-verify-flightplans \
-        build-all clean-all dev dev-collector check pre-commit
+        build-termgl-client build-all clean-all dev dev-collector dev-termgl check pre-commit
 
 # Build configuration
 GO := go
@@ -15,6 +15,7 @@ COLLECTOR_BIN := $(BINARY_DIR)/collector
 FETCH_FLIGHTPLANS_BIN := $(BINARY_DIR)/fetch-flightplans
 VERIFY_NASR_BIN := $(BINARY_DIR)/verify-nasr
 VERIFY_FLIGHTPLANS_BIN := $(BINARY_DIR)/verify-flightplans
+TERMGL_CLIENT_BIN := $(BINARY_DIR)/termgl-client
 ADS_BSCOPE_BIN := $(BINARY_DIR)/ads-bscope
 
 # Default target
@@ -35,10 +36,12 @@ help:
 	@echo "  make build-fetch-flightplans - Build flightplan fetcher"
 	@echo "  make build-verify-nasr  - Build NASR verifier"
 	@echo "  make build-verify-flightplans - Build flightplan verifier"
+	@echo "  make build-termgl-client - Build TermGL TUI client"
 	@echo ""
 	@echo "Local Development:"
 	@echo "  make dev                - Build and run ads-bscope locally"
 	@echo "  make dev-collector      - Build and run collector service locally"
+	@echo "  make dev-termgl         - Build and run TermGL client locally"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test               - Run all tests"
@@ -113,7 +116,12 @@ build-verify-flightplans: $(BINARY_DIR)
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(VERIFY_FLIGHTPLANS_BIN) ./cmd/verify-flightplans
 	@echo "✓ Built: $(VERIFY_FLIGHTPLANS_BIN)"
 
-build-all: build-collector build-fetch-flightplans build-verify-nasr build-verify-flightplans
+build-termgl-client: $(BINARY_DIR)
+	@echo "Building TermGL client..."
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(TERMGL_CLIENT_BIN) ./cmd/termgl-client
+	@echo "✓ Built: $(TERMGL_CLIENT_BIN)"
+
+build-all: build-collector build-fetch-flightplans build-verify-nasr build-verify-flightplans build-termgl-client
 	@echo ""
 	@echo "✓ All binaries built successfully"
 	@ls -lh $(BINARY_DIR)/
@@ -128,6 +136,10 @@ dev: $(BINARY_DIR)
 dev-collector: build-collector
 	@echo "Starting collector service..."
 	./$(COLLECTOR_BIN)
+
+dev-termgl: build-termgl-client
+	@echo "Starting TermGL client..."
+	./$(TERMGL_CLIENT_BIN)
 
 # Testing commands
 test:
