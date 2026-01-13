@@ -27,7 +27,7 @@ func NewAircraftRepository(db *DB, observer coordinates.Observer) *AircraftRepos
 
 // UpsertAircraft inserts or updates an aircraft record.
 // Calculates deltas, observer-relative measurements, and stores position history.
-func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.Aircraft, now time.Time) error {
+func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.Aircraft, now time.Time, regionName string) error {
 	// Get previous position if exists
 	var prevPos aircraftPosition
 	err := r.db.QueryRowContext(ctx,
@@ -75,10 +75,10 @@ func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.A
 			first_seen, last_seen, last_updated, position_count,
 			range_nm, bearing_deg, altitude_deg, azimuth_deg,
 			is_approaching, closest_range_nm, eta_closest_seconds,
-			is_visible
+			collection_region, is_visible
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1,
-			$12, $13, $14, $15, $16, $17, $18, TRUE
+			$12, $13, $14, $15, $16, $17, $18, $19, TRUE
 		)
 		ON CONFLICT (icao) DO UPDATE SET
 			callsign = EXCLUDED.callsign,
@@ -98,6 +98,7 @@ func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.A
 			is_approaching = EXCLUDED.is_approaching,
 			closest_range_nm = EXCLUDED.closest_range_nm,
 			eta_closest_seconds = EXCLUDED.eta_closest_seconds,
+			collection_region = EXCLUDED.collection_region,
 			is_visible = TRUE`,
 		aircraft.ICAO, aircraft.Callsign,
 		aircraft.Latitude, aircraft.Longitude, aircraft.Altitude,
@@ -105,6 +106,7 @@ func (r *AircraftRepository) UpsertAircraft(ctx context.Context, aircraft adsb.A
 		now, now, now,
 		rangeNM, 0.0, horiz.Altitude, horiz.Azimuth,
 		approaching, closestRange, etaSeconds,
+		regionName,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to upsert aircraft: %w", err)

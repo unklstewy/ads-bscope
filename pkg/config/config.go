@@ -110,6 +110,25 @@ type TelescopeConfig struct {
 	MinAltitude float64 `json:"min_altitude"`
 }
 
+// CollectionRegion represents a geographic region for aircraft data collection.
+// The collector will fetch aircraft data from all enabled regions.
+type CollectionRegion struct {
+	// Name is a friendly identifier for this region
+	Name string `json:"name"`
+
+	// Latitude in decimal degrees (-90 to +90)
+	Latitude float64 `json:"latitude"`
+
+	// Longitude in decimal degrees (-180 to +180)
+	Longitude float64 `json:"longitude"`
+
+	// RadiusNM is the collection radius in nautical miles
+	RadiusNM float64 `json:"radius_nm"`
+
+	// Enabled determines if this region should be actively collected
+	Enabled bool `json:"enabled"`
+}
+
 // ADSBConfig contains ADS-B data source configuration.
 type ADSBConfig struct {
 	// Sources is a list of configured ADS-B data sources
@@ -121,11 +140,15 @@ type ADSBConfig struct {
 	SearchRadiusNM float64 `json:"search_radius_nm"`
 
 	// MaxCollectionRadiusNM is the maximum radius for collecting aircraft data
-	// The collector fetches all aircraft within this radius of the observer location
-	// This allows TUI radar mode to display aircraft centered on different airports
-	// Recommended: 100-250 NM for regional coverage without excessive API usage
+	// DEPRECATED: Use CollectionRegions instead for multi-region support
+	// If CollectionRegions is empty, this creates a default region at observer location
 	// If 0 or not specified, defaults to SearchRadiusNM for backward compatibility
 	MaxCollectionRadiusNM float64 `json:"max_collection_radius_nm"`
+
+	// CollectionRegions defines multiple geographic regions to collect aircraft from
+	// The collector will fetch data from all enabled regions
+	// If empty, creates a default region using observer location + MaxCollectionRadiusNM
+	CollectionRegions []CollectionRegion `json:"collection_regions"`
 
 	// UpdateIntervalSeconds is how often to refresh aircraft data
 	UpdateIntervalSeconds int `json:"update_interval_seconds"`
@@ -161,8 +184,13 @@ type ADSBSource struct {
 }
 
 // ObserverConfig contains the observer's geographic location.
-// This is critical for accurate coordinate transformations.
+// This is critical for accurate coordinate transformations and telescope control.
+// The observer location is separate from collection regions - it represents
+// the physical location of the telescope/viewing equipment.
 type ObserverConfig struct {
+	// Name is a friendly identifier for this observer location
+	Name string `json:"name"`
+
 	// Latitude in decimal degrees (-90 to +90)
 	Latitude float64 `json:"latitude"`
 
@@ -287,10 +315,15 @@ func DefaultConfig() *Config {
 				},
 			},
 			SearchRadiusNM:        50.0,
-			MaxCollectionRadiusNM: 200.0, // Collect from larger region for multi-airport support
+			MaxCollectionRadiusNM: 200.0, // Deprecated: use CollectionRegions
+			CollectionRegions: []CollectionRegion{
+				// Example regions - customize based on your location
+				// By default, no regions enabled - will use legacy MaxCollectionRadiusNM
+			},
 			UpdateIntervalSeconds: 2,
 		},
 		Observer: ObserverConfig{
+			Name:      "Primary Observer",
 			Latitude:  0.0,
 			Longitude: 0.0,
 			Elevation: 0.0,
@@ -352,6 +385,31 @@ func (cfg *TelescopeConfig) GetAltitudeLimits() (minAlt, maxAlt float64) {
 	}
 
 	return minAlt, maxAlt
+}
+
+// GetCollectionRegions returns the effective collection regions.
+// Provides backward compatibility: if CollectionRegions is empty,
+// creates a default region using observer location + MaxCollectionRadiusNM.
+func (cfg *ADSBConfig) GetCollectionRegions(observer ObserverConfig) []CollectionRegion {
+	if len(cfg.CollectionRegions) > 0 {
+		return cfg.CollectionRegions
+	}
+
+	// Backward compatibility: create default region from legacy settings
+	regionRadius := cfg.MaxCollectionRadiusNM
+	if regionRadius == 0 {
+		regionRadius = cfg.SearchRadiusNM
+	}
+
+	return []CollectionRegion{
+		{
+			Name:      observer.Name + " Region",
+			Latitude:  observer.Latitude,
+			Longitude: observer.Longitude,
+			RadiusNM:  regionRadius,
+			Enabled:   true,
+		},
+	}
 }
 
 // applyEnvironmentOverrides applies environment variable overrides to the config.

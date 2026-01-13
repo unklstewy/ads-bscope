@@ -32,22 +32,27 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Determine collection radius (with backward compatibility)
-	collectionRadius := cfg.ADSB.MaxCollectionRadiusNM
-	if collectionRadius == 0 {
-		// Backward compatibility: use SearchRadiusNM if MaxCollectionRadiusNM not set
-		collectionRadius = cfg.ADSB.SearchRadiusNM
+	// Get effective collection regions
+	collectionRegions := cfg.ADSB.GetCollectionRegions(cfg.Observer)
+	enabledRegions := 0
+	for _, region := range collectionRegions {
+		if region.Enabled {
+			enabledRegions++
+		}
 	}
 
 	log.Printf("Configuration loaded from: %s", *configPath)
-	log.Printf("Observer location: %.4f°N, %.4f°W, %.0fm MSL",
-		cfg.Observer.Latitude, cfg.Observer.Longitude, cfg.Observer.Elevation)
-	log.Printf("Collection radius: %.0f nm", collectionRadius)
-	if collectionRadius != cfg.ADSB.SearchRadiusNM {
-		log.Printf("  (expanded from default %.0f nm for multi-airport coverage)", cfg.ADSB.SearchRadiusNM)
-	}
-	if collectionRadius > 250 {
-		log.Printf("  ⚠️  WARNING: Large collection radius (>250 nm) may cause API rate limit issues")
+	log.Printf("Observer: %s at %.4f°N, %.4f°W, %.0fm MSL",
+		cfg.Observer.Name, cfg.Observer.Latitude, cfg.Observer.Longitude, cfg.Observer.Elevation)
+	log.Printf("Collection regions: %d total, %d enabled", len(collectionRegions), enabledRegions)
+	for _, region := range collectionRegions {
+		if region.Enabled {
+			log.Printf("  ✓ %s: %.4f°N, %.4f°W (%.0f nm)",
+				region.Name, region.Latitude, region.Longitude, region.RadiusNM)
+			if region.RadiusNM > 250 {
+				log.Printf("    ⚠️  WARNING: Large radius (>250 nm) may cause API rate limit issues")
+			}
+		}
 	}
 	log.Printf("Update interval: %d seconds", cfg.ADSB.UpdateIntervalSeconds)
 
@@ -98,16 +103,16 @@ func main() {
 
 	// Start collector
 	collector := &Collector{
-		repo:           repo,
-		db:             database,
-		adsbClient:     adsbClient,
-		observer:       observer,
-		searchRadius:   cfg.ADSB.SearchRadiusNM, // Keep for reference
-		collectionRadius: collectionRadius,        // Use for actual collection
-		minAlt:         minAlt,
-		maxAlt:         maxAlt,
-		updateInterval: time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second,
-		rateLimit:      time.Duration(source.RateLimitSeconds * float64(time.Second)),
+		repo:             repo,
+		db:               database,
+		adsbClient:       adsbClient,
+		observer:         observer,
+		collectionRegions: collectionRegions,
+		minAlt:           minAlt,
+		maxAlt:           maxAlt,
+		updateInterval:   time.Duration(cfg.ADSB.UpdateIntervalSeconds) * time.Second,
+		rateLimit:        time.Duration(source.RateLimitSeconds * float64(time.Second)),
+		regionStats:      make(map[string]*RegionStats),
 	}
 
 	// Setup graceful shutdown
@@ -139,24 +144,31 @@ func main() {
 	log.Println("✓ Collector service stopped")
 }
 
+// RegionStats tracks per-region collection statistics.
+type RegionStats struct {
+	Fetched      int
+	Stored       int
+	LastUpdate   time.Time
+	TotalUpdates int
+}
+
 // Collector manages the aircraft data collection process.
 type Collector struct {
-	repo             *db.AircraftRepository
-	db               *db.DB
-	adsbClient       *adsb.AirplanesLiveClient
-	observer         coordinates.Observer
-	searchRadius     float64 // Default radius for backward compatibility
-	collectionRadius float64 // Actual radius used for collection
-	minAlt           float64
-	maxAlt           float64
-	updateInterval   time.Duration
-	rateLimit        time.Duration
+	repo              *db.AircraftRepository
+	db                *db.DB
+	adsbClient        *adsb.AirplanesLiveClient
+	observer          coordinates.Observer
+	collectionRegions []config.CollectionRegion
+	minAlt            float64
+	maxAlt            float64
+	updateInterval    time.Duration
+	rateLimit         time.Duration
 	
 	// Statistics
-	totalUpdates    int
-	totalAircraft   int
-	lastUpdateTime  time.Time
-	lastAircraftCount int
+	regionStats       map[string]*RegionStats
+	totalUpdates      int
+	totalAircraft     int
+	lastUpdateTime    time.Time
 }
 
 // Run starts the collection loop.
@@ -191,47 +203,103 @@ func (c *Collector) Run(ctx context.Context) {
 	}
 }
 
-// update fetches aircraft data and stores it in the database.
+// update fetches aircraft data from all enabled regions and stores in database.
 func (c *Collector) update(ctx context.Context) {
 	now := time.Now().UTC()
-	
-	// Fetch aircraft from API using collection radius
-	aircraft, err := c.adsbClient.GetAircraft(
-		c.observer.Location.Latitude,
-		c.observer.Location.Longitude,
-		c.collectionRadius,
-	)
-	if err != nil {
-		log.Printf("Error fetching aircraft: %v", err)
-		return
-	}
-
-	c.lastUpdateTime = now
-	c.lastAircraftCount = len(aircraft)
 	c.totalUpdates++
-
-	// Store each aircraft in database
-	stored := 0
-	for _, ac := range aircraft {
-		// Skip aircraft without valid position
-		if ac.Latitude == 0 && ac.Longitude == 0 {
+	
+	// Collect aircraft from all enabled regions
+	type aircraftWithRegion struct {
+		aircraft   adsb.Aircraft
+		regionName string
+	}
+	allAircraft := make(map[string]aircraftWithRegion) // ICAO -> Aircraft+Region (deduplication)
+	regionCount := 0
+	
+	for _, region := range c.collectionRegions {
+		if !region.Enabled {
 			continue
 		}
-
-		if err := c.repo.UpsertAircraft(ctx, ac, now); err != nil {
-			log.Printf("Error storing aircraft %s: %v", ac.ICAO, err)
+		
+		// Fetch aircraft for this region
+		aircraft, err := c.fetchRegion(ctx, region)
+		if err != nil {
+			log.Printf("Error fetching region %s: %v", region.Name, err)
+			continue
+		}
+		
+		// Update region stats
+		if c.regionStats[region.Name] == nil {
+			c.regionStats[region.Name] = &RegionStats{}
+		}
+		stats := c.regionStats[region.Name]
+		stats.Fetched = len(aircraft)
+		stats.LastUpdate = now
+		stats.TotalUpdates++
+		
+		// Merge into global collection (deduplicate by ICAO)
+		// If aircraft seen in multiple regions, use first region for now
+		// (could be enhanced to track multiple regions per aircraft)
+		for _, ac := range aircraft {
+			if ac.Latitude == 0 && ac.Longitude == 0 {
+				continue // Skip invalid positions
+			}
+			// Only store if not already seen (first region wins for deduplication)
+			if _, exists := allAircraft[ac.ICAO]; !exists {
+				allAircraft[ac.ICAO] = aircraftWithRegion{
+					aircraft:   ac,
+					regionName: region.Name,
+				}
+			}
+		}
+		
+		regionCount++
+		
+		// Rate limit between regions
+		if regionCount < len(c.collectionRegions) {
+			time.Sleep(c.rateLimit)
+		}
+	}
+	
+	// Store deduplicated aircraft with region tracking
+	stored := 0
+	for _, acWithRegion := range allAircraft {
+		if err := c.repo.UpsertAircraft(ctx, acWithRegion.aircraft, now, acWithRegion.regionName); err != nil {
+			log.Printf("Error storing aircraft %s: %v", acWithRegion.aircraft.ICAO, err)
 			continue
 		}
 		stored++
 	}
-
+	
+	// Update region stats with stored count
+	for _, stats := range c.regionStats {
+		stats.Stored = stored // Simplified: all regions contribute to total
+	}
+	
 	// Update trackable status for all aircraft
 	if err := c.repo.UpdateTrackableStatus(ctx, c.minAlt, c.maxAlt); err != nil {
 		log.Printf("Error updating trackable status: %v", err)
 	}
+	
+	c.lastUpdateTime = now
+	c.totalAircraft = len(allAircraft)
+	
+	log.Printf("[%s] Update #%d: %d regions, %d unique aircraft, %d stored",
+		now.Format("15:04:05"), c.totalUpdates, regionCount, len(allAircraft), stored)
+}
 
-	log.Printf("[%s] Update #%d: Fetched %d aircraft, stored %d",
-		now.Format("15:04:05"), c.totalUpdates, len(aircraft), stored)
+// fetchRegion fetches aircraft from a single collection region.
+func (c *Collector) fetchRegion(ctx context.Context, region config.CollectionRegion) ([]adsb.Aircraft, error) {
+	aircraft, err := c.adsbClient.GetAircraft(
+		region.Latitude,
+		region.Longitude,
+		region.RadiusNM,
+	)
+	if err != nil {
+		return nil, err
+	}
+	
+	return aircraft, nil
 }
 
 // cleanup removes stale aircraft and old position history.

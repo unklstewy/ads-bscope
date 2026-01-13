@@ -41,9 +41,33 @@
     ],
     "search_radius_nm": 50.0,
     "max_collection_radius_nm": 200.0,
+    "collection_regions": [
+      {
+        "name": "Charlotte Metro",
+        "latitude": 35.1871,
+        "longitude": -80.9218,
+        "radius_nm": 200.0,
+        "enabled": true
+      },
+      {
+        "name": "Atlanta Region",
+        "latitude": 33.6407,
+        "longitude": -84.4277,
+        "radius_nm": 150.0,
+        "enabled": false
+      },
+      {
+        "name": "New York Region",
+        "latitude": 40.6413,
+        "longitude": -73.7781,
+        "radius_nm": 100.0,
+        "enabled": false
+      }
+    ],
     "update_interval_seconds": 15
   },
   "observer": {
+    "name": "CLT Primary Observatory",
     "latitude": 35.1871,
     "longitude": -80.9218,
     "elevation": 230.0,

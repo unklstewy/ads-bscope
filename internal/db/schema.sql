@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS aircraft (
     closest_range_nm DOUBLE PRECISION,        -- Predicted closest approach distance
     eta_closest_seconds INTEGER,              -- ETA to closest approach
     
+    -- Collection metadata
+    collection_region TEXT,                   -- Name of region this aircraft was collected from
+    
     -- Status flags
     is_visible BOOLEAN DEFAULT TRUE,          -- Currently within tracking range
     is_trackable BOOLEAN DEFAULT FALSE,       -- Within telescope altitude limits
