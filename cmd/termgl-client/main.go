@@ -20,11 +20,13 @@ var (
 )
 
 func main() {
+	fmt.Fprintln(os.Stderr, "[DEBUG] Starting termgl-client...")
 	// Parse command line flags
 	configPath := flag.String("config", "configs/config.json", "Path to configuration file")
 	showVersion := flag.Bool("version", false, "Show version information")
 	showHelp := flag.Bool("help", false, "Show help information")
 	flag.Parse()
+	fmt.Fprintln(os.Stderr, "[DEBUG] Flags parsed")
 
 	// Show version
 	if *showVersion {
@@ -39,10 +41,12 @@ func main() {
 	}
 
 	// Load configuration
+	fmt.Fprintln(os.Stderr, "[DEBUG] Loading configuration...")
 	cfg, err := config.Load(*configPath)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+	fmt.Fprintln(os.Stderr, "[DEBUG] Configuration loaded")
 
 	// Setup observer
 	observer := coordinates.Observer{
@@ -55,17 +59,22 @@ func main() {
 	}
 
 	// Connect to database
+	fmt.Fprintln(os.Stderr, "[DEBUG] Connecting to database...")
 	database, err := db.Connect(cfg.Database)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer database.Close()
+	fmt.Fprintln(os.Stderr, "[DEBUG] Database connected")
 
 	// Initialize repositories
+	fmt.Fprintln(os.Stderr, "[DEBUG] Initializing repositories...")
 	aircraftRepo := db.NewAircraftRepository(database, observer)
 	flightPlanRepo := db.NewFlightPlanRepository(database)
+	fmt.Fprintln(os.Stderr, "[DEBUG] Repositories initialized")
 
 	// Create the application
+	fmt.Fprintln(os.Stderr, "[DEBUG] Creating application...")
 	app := NewApp(&AppConfig{
 		Config:             cfg,
 		ConfigPath:         *configPath,
@@ -74,12 +83,14 @@ func main() {
 		FlightPlanRepo:     flightPlanRepo,
 		Observer:           observer,
 	})
+	fmt.Fprintln(os.Stderr, "[DEBUG] Application created")
 
 	// Setup signal handler for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	
 	// Run app in a goroutine and wait for signals
+	fmt.Fprintln(os.Stderr, "[DEBUG] Starting application run loop...")
 	go func() {
 		if err := app.Run(); err != nil {
 			log.Printf("Application error: %v", err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"sync"
 	"time"
 
@@ -610,7 +611,12 @@ func (a *App) Run() error {
 	}
 
 	// Run the tview application
-	return a.tviewApp.Run()
+	fmt.Fprintln(os.Stderr, "[DEBUG] About to call tview.Run()...")
+	err := a.tviewApp.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[DEBUG] tview.Run() returned error: %v\n", err)
+	}
+	return err
 }
 
 // updateLoop periodically updates aircraft data

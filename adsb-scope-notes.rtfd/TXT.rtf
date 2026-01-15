@@ -1,0 +1,649 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fswiss\fcharset0 ArialMT;\f2\fswiss\fcharset0 Arial-BoldMT;
+\f3\fmodern\fcharset0 Courier;\f4\fswiss\fcharset0 Arial-ItalicMT;\f5\fswiss\fcharset0 Arial-BoldItalicMT;
+\f6\froman\fcharset0 Times-Roman;\f7\froman\fcharset0 Times-Bold;\f8\fnil\fcharset0 STIXTwoMath-Regular;
+\f9\fnil\fcharset0 AppleSymbols;\f10\fnil\fcharset0 HelveticaNeue;\f11\froman\fcharset0 TimesNewRomanPSMT;
+}
+{\colortbl;\red255\green255\blue255;\red224\green226\blue236;\red14\green15\blue19;\red0\green0\blue0;
+\red34\green35\blue40;\red22\green23\blue28;\red109\green109\blue109;\red157\green159\blue169;}
+{\*\expandedcolortbl;;\cssrgb\c90196\c90980\c94118;\cssrgb\c6275\c7059\c9412;\cssrgb\c0\c0\c0;
+\cssrgb\c17647\c18431\c20784;\cssrgb\c11373\c11765\c14902;\cssrgb\c50196\c50196\c50196;\cssrgb\c67843\c68627\c72157;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid1\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid201\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid3}
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}}{\leveltext\leveltemplateid301\'01\'00;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{circle\}}{\leveltext\leveltemplateid302\'01\uc0\u9702 ;}{\levelnumbers;}\fi-360\li1440\lin1440 }{\listname ;}\listid4}
+{\list\listtemplateid5\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid401\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid5}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}{\listoverride\listid5\listoverridecount0\ls5}}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 ==> Caveats\
+Compose is a Docker plugin. For Docker to find the plugin, add "cliPluginsExtraDirs" to ~/.docker/config.json:\
+  "cliPluginsExtraDirs": [\
+      "/usr/local/lib/docker/cli-plugins"\
+\
+\
+\
+\
+Example A:  A hobbiest user is running the application package on a Raspberry Pi for local compute. This users skill level is moderate and can configure the raspberry pi to use a dynamic dns client to hostname mapping, but does not have any knowledge of docker in depth.  He can with some effort or through the use of an AI agent configure NginX to create a frontend proxy to make connections to the application from the public internet via his dynamic dns entry.  In this instance having the package operate with NAT/PAT translations he could proxy connections to an exposed port group running on localhost:<ports>.  Even with that in mind this is mostly a localized compute approach, the user travels with the setup and cellular gateway, but wants the convenience of dns entries to not have to remember ip addresses.\
+\
+\
+Example B: An intermediate user of Docker or Kubernetes might want to deploy a more advanced configuration in which he uses a combination of kuberentes for container workloads, lets encrypt, certbot, and has a rudimentary understanding of the cyber security requirements to achieve a modicum of security configuration to expose the web front end (PWA), and SSH access to use both command line utilities like the TUI but also system commands.  This kind of user might have a more or less defined observation position, but wants a decent level of freedom to provide hostnames and TLD dns entires to flex some it muscle.  This type of user might be on the high end of enthusiast technologist.\
+\
+Example C:  An advanced user might have multiple observation stations setup around his local or wider regions and will want to execute multiple instances with container clustering using Kubernetes.  He will want the freedoms from Example B, but has a deeper understanding of workloads, system resources, etc.  And will want to be able to define hostnames based on cluster allocations. \
+\
+\
+\
+37.15772906575299, -94.5020131974365\
+\
+\
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs32 \cf2 \cb3 \expnd0\expndtw0\kerning0
+To replicate the\'a0
+\f2\b Seestar S30
+\f1\b0 \'a0(Standard/Pro) hardware profile in the 2026 Alpaca Simulator, you need to strip away the generic environmental sensors (like Rain or Humidity) and focus on the single internal control the Seestar actually exposes: the\'a0
+\f2\b Dew Heater
+\f1\b0 .\cb1 \
+
+\fs28 \
+
+\f2\b\fs40 \cb3 Switch Setup Configuration\cb1 \
+
+\f1\b0\fs32 \cb3 The Seestar S30 presents a single binary (On/Off) switch. Update\'a0
+\f2\b Id 0
+\f1\b0 \'a0and disable/ignore the others.\cb1 \
+
+\fs28 \
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx960
+\clvertalt \clshdrawnil \clwWidth1169\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx1920
+\clvertalt \clshdrawnil \clwWidth1713\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx2880
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx3840
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx4800
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx5760
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx6720
+\clvertalt \clshdrawnil \clwWidth1353\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr320 \gaph\cellx7680
+\clvertalt \clshdrawnil \clwWidth1680\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrs\brdrw20\brdrcf5 \clbrdrr\brdrnil \clpadt160 \clpadl0 \clpadb160 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 Id\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Name\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Description\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Value\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Min\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Max\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Step\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Can Write\cf0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 Can Async\cf0 \cb1 \cell \row
+
+\itap1\trowd \taflags1 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx960
+\clvertalt \clshdrawnil \clwWidth1169\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx1920
+\clvertalt \clshdrawnil \clwWidth1713\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx2880
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx3840
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx4800
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx5760
+\clvertalt \clshdrawnil \clwWidth1120\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx6720
+\clvertalt \clshdrawnil \clwWidth1353\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr320 \gaph\cellx7680
+\clvertalt \clshdrawnil \clwWidth1680\clftsWidth3 \clminw1120 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt240 \clpadl0 \clpadb240 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf2 \cb3 0
+\f1\b0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 Dew Heater
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 Internal Lens Heater
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 0
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 0
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 1
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f3 \cf2 \cb6 1
+\f1 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 [Checked]
+\f1\b0 \cb1 \cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f2\b \cf2 \cb3 [Unchecked]
+\f1\b0 \cb1 \cell \lastrow\row
+\pard\pardeftab720\partightenfactor0
+
+\f4\i\fs32 \cf2 \cb3 (Note: Uncheck\'a0
+\f5\b \cf2 \cb3 Can Write
+\f4\b0 \cf2 \cb3 \'a0for all other IDs from 1 to 9 so your software doesn't accidentally trigger non-existent hardware).
+\f1\i0 \cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs28 \cf2 \
+\pard\pardeftab720\partightenfactor0
+\cf7 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \
+\
+
+\f2\b\fs40 \cb3 How this fits your ADS-B Tracking System\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+\ls1\ilvl0
+\fs32 \cf2 \cb3 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+State Verification:
+\f1\b0 \'a0Before starting an intercept, your software can query\'a0
+\f3\fs28 \cb6 GET /switch/0/getswitch?ID=0
+\f1\fs32 \cb3 . If the aircraft is at high altitude and you're in a humid climate, your code should probably ensure this is set to\'a0
+\f3\fs28 \cb6 1
+\f1\fs32 \cb3 \'a0(True).\cb1 \
+\ls1\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+Safety Logic:
+\f1\b0 \'a0The S30 does\'a0
+\f2\b not
+\f1\b0 \'a0have a physical "Cover State" (Id 4) or "Rain Sensor" (Id 9) exposed via the Switch API. In the real S30, "Cover State" is effectively handled by the\'a0
+\f2\b Parked
+\f1\b0 \'a0status of the mount itself. If you want to simulate a "Closed" state, rely on the\'a0
+\f2\b Telescope.AtPark
+\f1\b0 \'a0property you configured earlier.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs28 \cf2 \
+\
+
+\f2\b\fs40 \cb3 Final System Summary for Development\cb1 \
+
+\f1\b0\fs32 \cb3 Your virtual Seestar S30 is now fully provisioned for 2026 software testing:\cb1 \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+\ls2\ilvl0
+\f2\b \cf2 \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Telescope:
+\f1\b0 \'a0Alt-Az, 6\'b0/sec max, tracking aircraft via\'a0
+\f3\fs28 \cb6 MoveAxis
+\f1\fs32 \cb3 .\cb1 \
+\ls2\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Camera:
+\f1\b0 \'a012-bit Color, 1920x1080 (S30) or 3840x2160 (Pro).\cb1 \
+\ls2\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Focuser:
+\f1\b0 \'a0Absolute 0\'963000 steps.\cb1 \
+\ls2\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Filter Wheel:
+\f1\b0 \'a04-slot (UV-IR, Duo, Dark, Solar).\cb1 \
+\ls2\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Switch:
+\f1\b0 \'a0Dew Heater (Id 0).\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+
+\f2\b \cf2 \cb3 \kerning1\expnd0\expndtw0 	\'95	\expnd0\expndtw0\kerning0
+Duration:
+\f1\b0 \'a00
+\fs28 \cf2 \cb1 \
+\pard\pardeftab720\partightenfactor0
+\cf2 \
+
+\f2\b\fs40 \cb3 Development Implications\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
+\ls3\ilvl0
+\fs32 \cf2 \cb3 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+Command Execution:
+\f1\b0 \'a0By setting Duration to\'a0
+\f3\fs28 \cb6 0
+\f1\fs32 \cb3 , the Alpaca\'a0
+\f3\fs28 \cb6 setswitch
+\f1\fs32 \cb3 \'a0command will complete immediately. This is ideal for your ADS-B software because it prevents unnecessary "waiting" for a peripheral state change while you are trying to manage high-speed aircraft tracking loops.\cb1 \
+\ls3\ilvl0
+\f2\b \cb3 \kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+Asynchronous Toggles:
+\f1\b0 \'a0If you were to set a Duration (e.g., 3 seconds), you would be forced to check\'a0
+\f3\fs28 \cb6 StateChangeInProgress
+\f1\fs32 \cb3 \'a0to know when the heater is actually on. With a duration of\'a0
+\f3\fs28 \cb6 0
+\f1\fs32 \cb3 , you can assume the state is set as soon as the\'a0
+\f3\fs28 \cb6 PUT
+\f1\fs32 \cb3 \'a0request returns a 200 OK.\cb1 \
+\pard\pardeftab720\partightenfactor0
+
+\fs28 \cf2 \cb3 \
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f6\fs24 \cf0 \cb1 To implement the 
+\f7\b MoveAxis
+\f6\b0  tracking logic in 
+\f7\b Go 1.25
+\f6\b0  for your ADS-B project, you need to calculate the angular rates for Altitude and Azimuth based on the aircraft\'92s vector, then dispatch them via Alpaca REST calls.\'a0\
+Since Go 1.25 emphasizes high-performance concurrency, you should run the tracking loop in a dedicated goroutine to ensure ADS-B jitter doesn't stall the mount commands.\'a0\
+\
+1. Data Structures & Alpaca Client\'a0\
+First, define the structures to match the Alpaca 
+\f3\fs26 MoveAxis
+\f6\fs24  API.\'a0\
+\
+go\
+
+\f3\fs26 package main\
+\
+import (\
+	"bytes"\
+	"encoding/json"\
+	"fmt"\
+	"net/http"\
+	"time"\
+)\
+\
+type MoveAxisRequest struct \{\
+	Axis                int     `json:"Axis"`\
+	Rate                float64 `json:"Rate"`\
+	ClientID            uint32  `json:"ClientID"`\
+	ClientTransactionID uint32  `json:"ClientTransactionID"`\
+\}\
+\
+// S30 Constraints for 2026 Firmware\
+const (\
+	MaxSlewRate = 6.0  // deg/sec\
+	AlpacaBase  = "http://localhost:11111/api/v1/telescope/0"\
+)\
+
+\f6\fs24 Use code with caution.\
+\
+\
+\
+2. The MoveAxis Function\'a0\
+This helper sends the 
+\f3\fs26 PUT
+\f6\fs24  request to your Alpaca Simulator.\'a0\
+\
+go\
+
+\f3\fs26 func SetAxisRate(axis int, rate float64, transactionID uint32) error \{\
+	// Limit check against S30 hardware capacity\
+	if rate > MaxSlewRate \{ rate = MaxSlewRate \}\
+	if rate < -MaxSlewRate \{ rate = -MaxSlewRate \}\
+\
+	url := fmt.Sprintf("%s/moveaxis", AlpacaBase)\
+	reqBody, _ := json.Marshal(MoveAxisRequest\{\
+		Axis:                axis,\
+		Rate:                rate,\
+		ClientID:            1,\
+		ClientTransactionID: transactionID,\
+	\})\
+\
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(reqBody))\
+	req.Header.Set("Content-Type", "application/json")\
+\
+	client := &http.Client\{Timeout: 500 * time.Millisecond\}\
+	resp, err := client.Do(req)\
+	if err != nil \{\
+		return err\
+	\}\
+	defer resp.Body.Close()\
+	return nil\
+\}\
+
+\f6\fs24 Use code with caution.\
+\
+\
+\
+3. The Intercept Logic (Angular Velocity Calculation)\'a0\
+To track an aircraft at 
+\f7\b Altitude (\
+{{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+
+\f8\b0 h\
+
+\f6 h\
+
+\f9\fs2 \dn1 \uc0\u8462 
+\f10 \up0 \
+
+\f7\b\fs24 )
+\f6\b0 , 
+\f7\b Ground Speed (\
+{{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+
+\f8\b0 v\
+
+\f6 v\
+
+\f8\fs2 \dn1 \uc0\u55349 \u56419 
+\f10 \up0 \
+
+\f7\b\fs24 )
+\f6\b0 , and 
+\f7\b Range (\
+{{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+
+\f8\b0 d\
+
+\f6 d\
+
+\f8\fs2 \dn1 \uc0\u55349 \u56401 
+\f10 \up0 \
+
+\f7\b\fs24 )
+\f6\b0 , the angular rate (\
+{{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+
+\f8 \uc0\u969 \
+
+\f6 omega\
+
+\f8\fs2 \dn1 \uc0\u55349 \u57108 
+\f10 \up0 \
+
+\f6\fs24 ) in radians per second is roughly\
+{{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+
+\f8 v\
+
+\fs18 p\
+e\
+r\
+p\
+e\
+n\
+d\
+i\
+c\
+u\
+l\
+a\
+r\
+
+\fs24 /\
+d\
+
+\f6 v sub p e r p e n d i c u l a r end-sub / d\
+
+\f8\fs2 \dn10 \uc0\u55349 \u56419 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56413 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56402 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56415 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56413 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56402 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56411 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56401 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56406 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56400 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56418 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56409 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56398 
+\f10 \up0 \
+
+\f8 \dn10 \uc0\u55349 \u56415 
+\f10 \up0 \
+\dn10 /\up0 \
+
+\f8 \dn10 \uc0\u55349 \u56401 
+\f10 \up0 \
+
+\f6\fs24 .\'a0\
+\
+go\
+
+\f3\fs26 func trackAircraft(predictedAltRate, predictedAzRate float64) \{\
+	// Execute concurrent axis moves to match S30 multi-axis capability\
+	go SetAxisRate(0, predictedAzRate, 100) // Azimuth\
+	go SetAxisRate(1, predictedAltRate, 101) // Altitude\
+\}\
+
+\f6\fs24 Use code with caution.\
+\
+\
+\
+4. Implementation Strategy for ADS-B\'a0\
+Since you are using Go 1.25:\'a0\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls4\ilvl0
+\f7\b \cf0 \kerning1\expnd0\expndtw0 {\listtext	1	}\expnd0\expndtw0\kerning0
+Prediction Buffer:
+\f6\b0  Use a 
+\f3\fs26 time.Ticker
+\f6\fs24  set to 
+\f7\b 200ms (5Hz)
+\f6\b0 .\
+\ls4\ilvl0
+\f7\b \kerning1\expnd0\expndtw0 {\listtext	2	}\expnd0\expndtw0\kerning0
+Look-ahead:
+\f6\b0  Because of the Seestar's motor latency, calculate the aircraft's position for 
+\f7\b CurrentTime + 400ms
+\f6\b0 .\
+\ls4\ilvl0
+\f7\b \kerning1\expnd0\expndtw0 {\listtext	3	}\expnd0\expndtw0\kerning0
+Delta Calculation:
+\f6\b0 \
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls4\ilvl1\cf0 \kerning1\expnd0\expndtw0 {\listtext	
+\f11 \uc0\u9702 
+\f6 	}\expnd0\expndtw0\kerning0
+Calculate {{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls4\ilvl1
+\f8 \cf0 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u9702 	}\expnd0\expndtw0\kerning0
+A\uc0\u8232 l\u8232 t\u8232 
+\fs18 f\uc0\u8232 u\u8232 t\u8232 u\u8232 r\u8232 e\u8232 \u8232 
+\fs24 \uc0\u8232 \u8722 \u8232 A\u8232 l\u8232 t\u8232 
+\fs18 n\uc0\u8232 o\u8232 w\u8232 \u8232 
+\fs24 \uc0\u8232 \u8232 
+\f6 cap A l t sub f u t u r e end-sub minus cap A l t sub n o w end-sub\uc0\u8232 
+\f8 \uc0\u8232 
+\f6 \uc0\u8232 
+\f8\fs2 \dn10 \uc0\u55349 \u56372 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56409 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56417 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56403 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56418 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56417 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56418 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56415 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56402 
+\f10 \up0 \uc0\u8232 \dn10 \uc0\u8722 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56372 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56409 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56417 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56411 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56412 
+\f10 \up0 \uc0\u8232 
+\f8 \dn10 \uc0\u55349 \u56420 
+\f10 \up0 \uc0\u8232 
+\f6\fs24 .\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls4\ilvl1\cf0 \kerning1\expnd0\expndtw0 {\listtext	
+\f11 \uc0\u9702 
+\f6 	}\expnd0\expndtw0\kerning0
+The required 
+\f3\fs26 Rate
+\f6\fs24  = {{\NeXTGraphic unknown.gif \width20 \height20 \appleattachmentpadding0 \appleembedtype0 \appleaqc
+}¬}\
+\pard\tx940\tx1440\pardeftab720\li1440\fi-1440\partightenfactor0
+\ls4\ilvl1
+\f8 \cf0 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u9702 	}\expnd0\expndtw0\kerning0
+\uc0\u916 \u8232 A\u8232 l\u8232 t\u8232 /\u8232 0.4\u8232 \u8232 
+\f6 cap delta cap A l t / 0.4\uc0\u8232 
+\f8 \uc0\u8232 
+\f6 \uc0\u8232 
+\f10\fs2 \dn1 \uc0\u916 \up0 \uc0\u8232 
+\f8 \dn1 \uc0\u55349 \u56372 
+\f10 \up0 \uc0\u8232 
+\f8 \dn1 \uc0\u55349 \u56409 
+\f10 \up0 \uc0\u8232 
+\f8 \dn1 \uc0\u55349 \u56417 
+\f10 \up0 \uc0\u8232 \dn1 /\up0 \uc0\u8232 \dn1 0\up0 \uc0\u8232 \dn1 .\up0 \uc0\u8232 \dn1 4\up0 \uc0\u8232 
+\f6\fs24 seconds.\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls4\ilvl0
+\f7\b \cf0 \kerning1\expnd0\expndtw0 {\listtext	4	}\expnd0\expndtw0\kerning0
+Zero-Crossing:
+\f6\b0  Ensure your logic handles the Azimuth 
+\f7\b 0/360 wrap
+\f6\b0  so the S30 doesn't try to "spin the long way around" (though with your custom software, you can force the shortest path).\'a0\
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+5. Simulator Safety Verification\'a0\
+While testing in the simulator:\'a0\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls5\ilvl0\cf0 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Verify that your 
+\f3\fs26 SetAxisRate
+\f6\fs24  returns an error if the aircraft enters your 
+\f7\b 85\'b0 Altitude
+\f6\b0  exclusion zone.\
+\ls5\ilvl0\kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+Monitor the 
+\f7\b Duration
+\f6\b0  of your HTTP calls in Go; if the network latency to the simulator exceeds 100ms, your tracking will "stutter."\'a0\
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+\pard\pardeftab720\partightenfactor0
+{\field{\*\fldinst{HYPERLINK "https://labs.google.com/search/experiment/22"}}{\fldrslt 
+\f1\fs28 \cf2 \
+}}\pard\pardeftab720\qc\partightenfactor0
+
+\f10\fs22 \cf2 \
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf2 \
+\
+\pard\pardeftab720\qc\partightenfactor0
+
+\f10\fs22 \cf2 \
+\
+\pard\pardeftab720\partightenfactor0
+
+\f1\fs28 \cf2 \
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\fs32 \cf2 \cb6 What about the duration setting?
+\fs24 \cf8 \cb1 \
+\pard\pardeftab720\qr\partightenfactor0
+\cf8 \
+\pard\pardeftab720\partightenfactor0
+
+\fs28 \cf2 \
+\
+\
+\
+\
+\
+\
+\
+\pard\pardeftab720\partightenfactor0
+
+\f6\fs32 \cf2 \cb3 In the
+\f1 \'a0
+\f2\b ASCOM/Alpaca Switch Simulator
+\f1\b0 , the\'a0
+\f2\b Duration
+\f1\b0 \'a0setting represents the time (in seconds) the simulator takes to transition the switch from o\cb1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \kerning1\expnd0\expndtw0 \
+}

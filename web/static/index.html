@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ADS-B Scope - Aircraft tracking telescope control">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>ADS-B Scope</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    
+    <!-- App CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="app-title">
+                <span class="icon">🛩️</span>
+                ADS-B Scope
+            </h1>
+            <nav class="header-nav">
+                <button id="btn-login" class="btn btn-primary">Login</button>
+                <div id="user-menu" class="user-menu hidden">
+                    <span id="username" class="username"></span>
+                    <button id="btn-logout" class="btn btn-secondary">Logout</button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+        <!-- Login Screen (shown initially) -->
+        <div id="login-screen" class="login-screen">
+            <div class="login-card">
+                <h2>Welcome to ADS-B Scope</h2>
+                <p class="login-subtitle">Track aircraft with your telescope</p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username-input">Username</label>
+                        <input type="text" id="username-input" name="username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password-input">Password</label>
+                        <input type="password" id="password-input" name="password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                    <div id="login-error" class="error-message hidden"></div>
+                </form>
+                <div class="login-demo">
+                    <p class="demo-hint">Demo credentials: admin / admin</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Screen (shown after login) -->
+        <div id="app-screen" class="app-screen hidden">
+            <!-- Left Panel: Sky Map & Aircraft List -->
+            <div class="left-panel">
+                <!-- Sky Map -->
+                <section class="sky-map-section">
+                    <div class="section-header">
+                        <h2>Sky Map</h2>
+                        <div class="map-controls">
+                            <button id="btn-center-telescope" class="btn btn-sm" title="Center on telescope">🔭</button>
+                            <button id="btn-toggle-grid" class="btn btn-sm" title="Toggle grid">📐</button>
+                        </div>
+                    </div>
+                    <div id="sky-map" class="sky-map"></div>
+                </section>
+
+                <!-- Aircraft List -->
+                <section class="aircraft-list-section">
+                    <div class="section-header">
+                        <h2>Nearby Aircraft</h2>
+                        <div class="list-controls">
+                            <input type="search" id="aircraft-search" placeholder="Search..." class="search-input">
+                            <select id="aircraft-sort" class="sort-select">
+                                <option value="distance">Distance</option>
+                                <option value="altitude">Altitude</option>
+                                <option value="speed">Speed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="aircraft-list" class="aircraft-list"></div>
+                </section>
+            </div>
+
+            <!-- Right Panel: Telescope Controls & Telemetry -->
+            <div class="right-panel">
+                <!-- Connection Status -->
+                <section class="status-section">
+                    <div class="status-indicators">
+                        <div class="status-indicator">
+                            <span class="status-dot" id="status-telescope"></span>
+                            <span>Telescope</span>
+                        </div>
+                        <div class="status-indicator">
+                            <span class="status-dot" id="status-adsb"></span>
+                            <span>ADS-B</span>
+                        </div>
+                        <div class="status-indicator">
+                            <span class="status-dot" id="status-tracking"></span>
+                            <span>Tracking</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Telescope Controls -->
+                <section class="telescope-controls-section">
+                    <div class="section-header">
+                        <h2>Telescope Control</h2>
+                        <span id="control-role" class="role-badge">Observer</span>
+                    </div>
+                    
+                    <!-- Current Target -->
+                    <div class="current-target">
+                        <h3>Current Target</h3>
+                        <div id="target-info" class="target-info">
+                            <p class="target-none">No target selected</p>
+                        </div>
+                    </div>
+
+                    <!-- Tracking Controls -->
+                    <div class="tracking-controls">
+                        <button id="btn-start-tracking" class="btn btn-success btn-block" disabled>
+                            Start Tracking
+                        </button>
+                        <button id="btn-stop-tracking" class="btn btn-danger btn-block hidden">
+                            Stop Tracking
+                        </button>
+                    </div>
+
+                    <!-- Manual Slew -->
+                    <div class="manual-slew">
+                        <h3>Manual Slew</h3>
+                        <div class="slew-grid">
+                            <button class="btn-slew" data-direction="nw">↖</button>
+                            <button class="btn-slew" data-direction="n">↑</button>
+                            <button class="btn-slew" data-direction="ne">↗</button>
+                            <button class="btn-slew" data-direction="w">←</button>
+                            <button class="btn-slew btn-stop" id="btn-abort">STOP</button>
+                            <button class="btn-slew" data-direction="e">→</button>
+                            <button class="btn-slew" data-direction="sw">↙</button>
+                            <button class="btn-slew" data-direction="s">↓</button>
+                            <button class="btn-slew" data-direction="se">↘</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Telemetry Dashboard -->
+                <section class="telemetry-section">
+                    <div class="section-header">
+                        <h2>Telemetry</h2>
+                    </div>
+                    
+                    <div class="telemetry-grid">
+                        <div class="telemetry-card">
+                            <h3>Position</h3>
+                            <div class="telemetry-data">
+                                <div class="data-row">
+                                    <span class="label">Alt/Az:</span>
+                                    <span id="tel-altaz" class="value">--° / --°</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="label">RA/Dec:</span>
+                                    <span id="tel-radec" class="value">--h --m / --° --'</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <h3>Status</h3>
+                            <div class="telemetry-data">
+                                <div class="data-row">
+                                    <span class="label">State:</span>
+                                    <span id="tel-state" class="value">Idle</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="label">Slewing:</span>
+                                    <span id="tel-slewing" class="value">No</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <h3>Target</h3>
+                            <div class="telemetry-data">
+                                <div class="data-row">
+                                    <span class="label">Distance:</span>
+                                    <span id="tel-distance" class="value">--</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="label">Velocity:</span>
+                                    <span id="tel-velocity" class="value">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-card">
+                            <h3>Limits</h3>
+                            <div class="telemetry-data">
+                                <div class="data-row">
+                                    <span class="label">Alt Range:</span>
+                                    <span id="tel-alt-limits" class="value">20° - 80°</span>
+                                </div>
+                                <div class="data-row">
+                                    <span class="label">Warning:</span>
+                                    <span id="tel-warning" class="value warning-none">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Altitude Chart -->
+                    <div class="chart-container">
+                        <canvas id="altitude-chart"></canvas>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="/js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.error('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

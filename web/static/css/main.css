@@ -1,0 +1,743 @@
+/* ===== CSS Variables ===== */
+:root {
+    --color-bg-dark: #0f0f1e;
+    --color-bg-medium: #1a1a2e;
+    --color-bg-light: #252541;
+    --color-bg-card: #16213e;
+    --color-text-primary: #e4e4e7;
+    --color-text-secondary: #a1a1aa;
+    --color-accent: #3b82f6;
+    --color-accent-hover: #2563eb;
+    --color-success: #22c55e;
+    --color-danger: #ef4444;
+    --color-warning: #f59e0b;
+    --color-border: #3f3f46;
+    
+    --spacing-xs: 0.2rem;
+    --spacing-sm: 0.4rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.5rem;
+    
+    --radius-sm: 0.2rem;
+    --radius-md: 0.4rem;
+    --radius-lg: 0.6rem;
+    
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+}
+
+/* ===== Reset & Base ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== Header ===== */
+.app-header {
+    background-color: var(--color-bg-medium);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--spacing-md) var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1920px;
+    margin: 0 auto;
+}
+
+.app-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.app-title .icon {
+    font-size: 1.3rem;
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.username {
+    color: var(--color-text-secondary);
+}
+
+/* ===== Main Layout ===== */
+.app-main {
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+.app-screen {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: var(--spacing-sm);
+    height: 100%;
+    padding: var(--spacing-sm);
+    overflow: hidden;
+}
+
+.left-panel,
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.left-panel {
+    min-width: 0;
+}
+
+.right-panel {
+    min-width: 350px;
+    max-width: 350px;
+}
+
+/* ===== Login Screen ===== */
+.login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-medium) 100%);
+}
+
+.login-card {
+    background-color: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid var(--color-border);
+}
+
+.login-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+    text-align: center;
+}
+
+.login-subtitle {
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.login-demo {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+.demo-hint {
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+/* ===== Forms ===== */
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.error-message {
+    color: var(--color-danger);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: rgba(239, 68, 68, 0.1);
+    border-radius: var(--radius-sm);
+}
+
+/* ===== Buttons ===== */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-primary {
+    background-color: var(--color-accent);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+}
+
+.btn-secondary {
+    background-color: var(--color-bg-light);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}
+
+.btn-success {
+    background-color: var(--color-success);
+    color: white;
+}
+
+.btn-danger {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.btn-block {
+    width: 100%;
+    display: block;
+}
+
+.btn-sm {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.75rem;
+}
+
+/* ===== Sections ===== */
+section {
+    background-color: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+}
+
+.section-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-bg-medium);
+}
+
+.section-header h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.section-header h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--spacing-md);
+}
+
+/* ===== Sky Map ===== */
+.sky-map-section {
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sky-map {
+    flex: 1;
+    position: relative;
+}
+
+.map-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+/* ===== Aircraft List ===== */
+.aircraft-list-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.list-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.search-input {
+    flex: 1;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.sort-select {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.aircraft-list {
+    overflow-y: auto;
+    max-height: calc(50vh - 100px);
+}
+
+.aircraft-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.aircraft-item:hover {
+    background-color: var(--color-bg-light);
+}
+
+.aircraft-item.selected {
+    background-color: var(--color-bg-light);
+    border-left: 3px solid var(--color-accent);
+}
+
+.aircraft-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+}
+
+.aircraft-id {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.aircraft-distance {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.aircraft-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.aircraft-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.aircraft-detail-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.aircraft-detail-value {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+/* ===== Status Indicators ===== */
+.status-section {
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.status-indicators {
+    display: flex;
+    justify-content: space-around;
+    gap: var(--spacing-md);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.875rem;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--color-border);
+    position: relative;
+}
+
+.status-dot.connected {
+    background-color: var(--color-success);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.tracking {
+    background-color: var(--color-accent);
+    animation: pulse 1s infinite;
+}
+
+.status-dot.error {
+    background-color: var(--color-danger);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ===== Telescope Controls ===== */
+.telescope-controls-section {
+    padding: var(--spacing-md);
+}
+
+.role-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.current-target,
+.manual-slew {
+    margin-top: var(--spacing-md);
+}
+
+.target-info {
+    padding: var(--spacing-md);
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-sm);
+}
+
+.target-none {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+.target-data {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.target-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.target-label {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.target-value {
+    font-weight: 500;
+}
+
+.tracking-controls {
+    margin-top: var(--spacing-md);
+}
+
+.tracking-controls .btn {
+    margin-top: var(--spacing-sm);
+}
+
+/* ===== Manual Slew Grid ===== */
+.slew-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.btn-slew {
+    aspect-ratio: 1;
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-slew:hover {
+    background-color: var(--color-bg-medium);
+    border-color: var(--color-accent);
+    transform: scale(1.05);
+}
+
+.btn-slew:active {
+    transform: scale(0.95);
+}
+
+.btn-slew.btn-stop {
+    background-color: var(--color-danger);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.btn-slew.btn-stop:hover {
+    background-color: #dc2626;
+}
+
+/* ===== Telemetry ===== */
+.telemetry-section {
+    padding: var(--spacing-md);
+}
+
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+}
+
+.telemetry-card {
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+}
+
+.telemetry-card h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.telemetry-data {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.data-row .label {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+.data-row .value {
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+}
+
+.warning-none {
+    color: var(--color-success);
+}
+
+.warning-approaching {
+    color: var(--color-warning);
+}
+
+.warning-exceeded {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.chart-container {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-light);
+    border-radius: var(--radius-md);
+    height: 150px;
+}
+
+/* ===== Toast Notifications ===== */
+.toast-container {
+    position: fixed;
+    top: var(--spacing-lg);
+    right: var(--spacing-lg);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.toast {
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-lg);
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast.success {
+    border-left: 4px solid var(--color-success);
+}
+
+.toast.error {
+    border-left: 4px solid var(--color-danger);
+}
+
+.toast.info {
+    border-left: 4px solid var(--color-accent);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+    .app-screen {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr auto;
+    }
+    
+    .right-panel {
+        min-width: 0;
+    }
+    
+    .telemetry-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .app-title {
+        font-size: 1.25rem;
+    }
+    
+    .app-screen {
+        padding: var(--spacing-sm);
+        gap: var(--spacing-sm);
+    }
+    
+    .sky-map-section {
+        height: 40vh;
+    }
+    
+    .aircraft-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .slew-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-xs);
+    }
+    
+    .btn-slew {
+        font-size: 1rem;
+        padding: var(--spacing-sm);
+    }
+}
+
+/* ===== Scrollbar Styling ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+}

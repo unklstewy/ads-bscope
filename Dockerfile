@@ -25,6 +25,7 @@ ARG LDFLAGS="-w -s -extldflags '-static'"
 
 # Build all binaries (CGO_ENABLED=0 ensures static linking)
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o collector ./cmd/collector
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o web-server ./cmd/web-server
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o fetch-flightplans ./cmd/fetch-flightplans
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o verify-nasr ./cmd/verify-nasr
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="${LDFLAGS}" -o verify-flightplans ./cmd/verify-flightplans
@@ -102,6 +103,32 @@ COPY --from=builder /build/configs /app/configs
 USER 65534:65534
 
 CMD ["./verify-flightplans"]
+
+# Runtime stage for web-server (PWA + REST API)
+FROM alpine:latest AS web-server
+
+# Install wget for healthcheck
+RUN apk add --no-cache ca-certificates tzdata wget
+
+WORKDIR /app
+
+# Copy binary, configs, and web static files
+COPY --from=builder /build/web-server /app/
+COPY --from=builder /build/configs /app/configs
+COPY --from=builder /build/web/static /app/web/static
+
+# Use non-root user
+USER 65534:65534
+
+# Expose HTTP port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/system/status || exit 1
+
+# Run the web server
+CMD ["./web-server", "--port", "8080"]
 
 # Default runtime stage (backwards compatible)
 FROM collector AS default

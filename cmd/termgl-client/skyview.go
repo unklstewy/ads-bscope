@@ -1,58 +1,43 @@
 package main
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-
-	"github.com/unklstewy/ads-bscope/pkg/termgl"
 )
 
-// SkyView is a custom tview primitive that renders the sky chart using TermGL
+// SkyView is a custom tview primitive that renders the sky chart using tcell
 type SkyView struct {
 	*tview.Box
-	app    *App
-	tglCtx *termgl.Context
+	app *App
 }
 
-// NewSkyView creates a new sky view with TermGL rendering
+// NewSkyView creates a new sky view with tcell rendering
 func NewSkyView(app *App) *SkyView {
 	sv := &SkyView{
 		Box: tview.NewBox(),
 		app: app,
 	}
-	sv.SetBorder(true).SetTitle(" Sky View - Alt/Az (TermGL) ")
+	sv.SetBorder(true).SetTitle(" Sky View - Alt/Az ")
 	return sv
 }
 
-// Draw renders the sky view using TermGL
+// Draw renders the sky view using tcell
 func (sv *SkyView) Draw(screen tcell.Screen) {
 	sv.Box.DrawForSubclass(screen, sv)
 
 	// Get the inner bounds (excluding border)
 	x, y, width, height := sv.GetInnerRect()
 
-	// Initialize or resize TermGL context if needed
-	if sv.tglCtx == nil {
-		// First time initialization - boot TermGL
-		if err := termgl.Boot(); err != nil {
-			// Fall back to error message
-			return
-		}
-		
-		ctx, err := termgl.Init(uint(width), uint(height))
-		if err != nil {
-			return
-		}
-		sv.tglCtx = ctx
-	}
-
-	// Clear TermGL buffer
-	sv.tglCtx.Clear()
-
 	// Calculate sky view parameters
-	centerX, centerY, radius := CalculateSkyViewBounds(width, height)
+	centerX := x + width/2
+	centerY := y + height/2
+	radius := width / 2
+	if height < width {
+		radius = height / 2
+	}
 
 	// Apply zoom
 	sv.app.mu.RLock()
@@ -61,28 +46,34 @@ func (sv *SkyView) Draw(screen tcell.Screen) {
 	
 	radius = int(float64(radius) * zoom)
 
-	// Define colors for TermGL
-	gridColor := termgl.ColorGray
-	horizonColor := termgl.ColorWhite
-	zenithColor := termgl.ColorYellow
+	// Define colors for tcell
+	gridStyle := tcell.StyleDefault.Foreground(tcell.ColorGray)
+	horizonStyle := tcell.StyleDefault.Foreground(tcell.ColorWhite)
+	zenithStyle := tcell.StyleDefault.Foreground(tcell.ColorYellow)
 
 	// Draw altitude rings (concentric circles)
 	altitudes := []float64{30, 60, 90} // 0° (horizon) will be drawn separately
 	for _, alt := range altitudes {
 		// Calculate radius for this altitude using stereographic projection
-		zenithAngle := (90.0 - alt) * 3.14159 / 180.0
-		ringRadius := int(2.0 * float64(radius) * tan(zenithAngle/2.0))
+		zenithAngle := (90.0 - alt) * math.Pi / 180.0
+		ringRadius := int(2.0 * float64(radius) * math.Tan(zenithAngle/2.0))
 		
 		if alt == 90 {
-			// Zenith marker
-			DrawZenithMarker(sv.tglCtx, centerX, centerY, zenithColor)
-		} else {
-			DrawAltitudeRing(sv.tglCtx, centerX, centerY, ringRadius, alt, gridColor)
+			// Zenith marker - draw a + symbol
+			screen.SetContent(centerX, centerY, '+', nil, zenithStyle)
+		} else if ringRadius > 0 && ringRadius < radius {
+			// Draw circle using Unicode box drawing characters
+			drawCircle(screen, centerX, centerY, ringRadius, '·', gridStyle)
+			// Add altitude label
+			label := fmt.Sprintf("%.0f°", alt)
+			for i, ch := range label {
+				screen.SetContent(centerX+i-len(label)/2, centerY-ringRadius-1, ch, nil, gridStyle)
+			}
 		}
 	}
 
 	// Draw horizon (edge circle)
-	DrawHorizonLine(sv.tglCtx, centerX, centerY, radius, horizonColor)
+	drawCircle(screen, centerX, centerY, radius-1, '○', horizonStyle)
 
 	// Draw azimuth lines (radial lines)
 	azimuths := []struct {
@@ -100,7 +91,18 @@ func (sv *SkyView) Draw(screen tcell.Screen) {
 	}
 
 	for _, az := range azimuths {
-		DrawAzimuthLine(sv.tglCtx, centerX, centerY, az.angle, radius, gridColor, az.label)
+		// Draw radial line from center to horizon
+		angle := az.angle * math.Pi / 180.0
+		endX := centerX + int(float64(radius)*math.Sin(angle))
+		endY := centerY - int(float64(radius)*math.Cos(angle))
+		drawLine(screen, centerX, centerY, endX, endY, '·', gridStyle)
+		
+		// Draw label at the edge
+		labelX := centerX + int(float64(radius+1)*math.Sin(angle))
+		labelY := centerY - int(float64(radius+1)*math.Cos(angle))
+		for i, ch := range az.label {
+			screen.SetContent(labelX+i-len(az.label)/2, labelY, ch, nil, horizonStyle)
+		}
 	}
 
 	// Draw aircraft
@@ -112,40 +114,38 @@ func (sv *SkyView) Draw(screen tcell.Screen) {
 	sv.app.mu.RUnlock()
 
 	for i, ac := range aircraft {
-		// Project aircraft position to screen coordinates
-		pt := StereographicProjection(
-			ac.HorizCoord.Altitude,
-			ac.HorizCoord.Azimuth,
-			float64(centerX),
-			float64(centerY),
-			float64(radius),
-		)
+		// Project aircraft position to screen coordinates using stereographic projection
+		zenithAngle := (90.0 - ac.HorizCoord.Altitude) * math.Pi / 180.0
+		r := 2.0 * float64(radius) * math.Tan(zenithAngle/2.0)
+		azimuthRad := ac.HorizCoord.Azimuth * math.Pi / 180.0
+		px := centerX + int(r*math.Sin(azimuthRad))
+		py := centerY - int(r*math.Cos(azimuthRad))
 
 		// Skip if outside view bounds
-		if pt.X < x || pt.X >= x+width || pt.Y < y || pt.Y >= y+height {
+		if px < x || px >= x+width || py < y || py >= y+height {
 			continue
 		}
 
-		// Determine symbol and color
+		// Determine symbol and style
 		var symbol rune
-		var color termgl.Color
+		var style tcell.Style
 
 		if tracking && ac.ICAO == trackICAO {
 			// Tracking this aircraft
-			symbol = '◉'
-			color = termgl.ColorGreen
+			symbol = '◉' // ◉
+			style = tcell.StyleDefault.Foreground(tcell.ColorGreen)
 		} else if i == selectedIndex {
 			// Selected aircraft
-			symbol = '●'
-			color = termgl.ColorYellow
+			symbol = '●' // ●
+			style = tcell.StyleDefault.Foreground(tcell.ColorYellow)
 		} else {
 			// Normal aircraft
-			symbol = '○'
-			color = termgl.ColorLightBlue
+			symbol = '○' // ○
+			style = tcell.StyleDefault.Foreground(tcell.ColorLightBlue)
 		}
 
 		// Draw aircraft symbol
-		DrawAircraftSymbol(sv.tglCtx, pt.X, pt.Y, symbol, color)
+		screen.SetContent(px, py, symbol, nil, style)
 
 		// Draw callsign label for selected or tracked aircraft
 		if (i == selectedIndex) || (tracking && ac.ICAO == trackICAO) {
@@ -153,66 +153,79 @@ func (sv *SkyView) Draw(screen tcell.Screen) {
 			if label == "" {
 				label = ac.ICAO
 			}
-			DrawAircraftLabel(sv.tglCtx, pt.X, pt.Y, label, color)
+			// Draw label to the right of the aircraft
+			for j, ch := range label {
+				screen.SetContent(px+j+2, py, ch, nil, style)
+			}
 		}
 
-		// Draw velocity vector if aircraft is moving
+		// Draw velocity vector if aircraft is moving (simple arrow)
 		if ac.Speed > 50 {
-			vectorColor := termgl.ColorDarkCyan
-			DrawVelocityVector(sv.tglCtx, pt.X, pt.Y, ac.Heading, ac.Speed, vectorColor)
-		}
-	}
-
-	// Render TermGL buffer to tcell screen
-	// We need to manually copy TermGL's output to tcell's screen
-	// This is a workaround since TermGL outputs directly to stdout
-	// For now, we'll flush TermGL which will overwrite the terminal
-	// In a production system, we'd need a proper integration layer
-	sv.tglCtx.Flush()
-
-	// Draw altitude limit zones if configured
-	sv.drawAltitudeLimitZones(centerX, centerY, radius)
-}
-
-// drawAltitudeLimitZones draws colored zones for altitude limits
-func (sv *SkyView) drawAltitudeLimitZones(centerX, centerY, radius int) {
-	sv.app.mu.RLock()
-	minAlt := sv.app.minAlt
-	maxAlt := sv.app.maxAlt
-	sv.app.mu.RUnlock()
-
-	// Only draw if we have altitude limits configured
-	if minAlt == 0 && maxAlt == 0 {
-		return
-	}
-
-	// Calculate radii for limit zones
-	// Red zone: 0-20° (too low)
-	if minAlt > 0 {
-		zenithAngle := (90.0 - minAlt) * 3.14159 / 180.0
-		minRadius := int(2.0 * float64(radius) * tan(zenithAngle/2.0))
-
-		// Draw subtle background for low altitude zone
-		color := termgl.ColorDarkRed
-		if minRadius > 0 && minRadius < radius {
-			DrawCircle(sv.tglCtx, centerX, centerY, minRadius, color)
-		}
-	}
-
-	// Red zone: 80-90° (too high, field rotation)
-	if maxAlt < 90 && maxAlt > 0 {
-		zenithAngle := (90.0 - maxAlt) * 3.14159 / 180.0
-		maxRadius := int(2.0 * float64(radius) * tan(zenithAngle/2.0))
-
-		// Draw subtle background for high altitude zone
-		color := termgl.ColorDarkRed
-		if maxRadius > 0 && maxRadius < radius/2 {
-			DrawCircle(sv.tglCtx, centerX, centerY, maxRadius, color)
+			vectorStyle := tcell.StyleDefault.Foreground(tcell.ColorDarkCyan)
+			headingRad := ac.Heading * math.Pi / 180.0
+			// Draw a short line in the direction of travel
+			vx := px + int(3*math.Sin(headingRad))
+			vy := py - int(3*math.Cos(headingRad))
+			drawLine(screen, px, py, vx, vy, '→', vectorStyle) // →
 		}
 	}
 }
 
-// tan is a helper for tangent calculation
-func tan(x float64) float64 {
-	return math.Tan(x)
+// drawCircle draws a circle using Bresenham's circle algorithm
+func drawCircle(screen tcell.Screen, cx, cy, radius int, char rune, style tcell.Style) {
+	x := 0
+	y := radius
+	d := 3 - 2*radius
+
+	for x <= y {
+		// Draw 8 octants
+		screen.SetContent(cx+x, cy+y, char, nil, style)
+		screen.SetContent(cx-x, cy+y, char, nil, style)
+		screen.SetContent(cx+x, cy-y, char, nil, style)
+		screen.SetContent(cx-x, cy-y, char, nil, style)
+		screen.SetContent(cx+y, cy+x, char, nil, style)
+		screen.SetContent(cx-y, cy+x, char, nil, style)
+		screen.SetContent(cx+y, cy-x, char, nil, style)
+		screen.SetContent(cx-y, cy-x, char, nil, style)
+
+		x++
+		if d > 0 {
+			y--
+			d = d + 4*(x-y) + 10
+		} else {
+			d = d + 4*x + 6
+		}
+	}
 }
+
+// drawLine draws a line using Bresenham's line algorithm
+func drawLine(screen tcell.Screen, x0, y0, x1, y1 int, char rune, style tcell.Style) {
+	dx := abs(x1 - x0)
+	dy := abs(y1 - y0)
+	sx := -1
+	if x0 < x1 {
+		sx = 1
+	}
+	sy := -1
+	if y0 < y1 {
+		sy = 1
+	}
+	err := dx - dy
+
+	for {
+		screen.SetContent(x0, y0, char, nil, style)
+		if x0 == x1 && y0 == y1 {
+			break
+		}
+		e2 := 2 * err
+		if e2 > -dy {
+			err -= dy
+			x0 += sx
+		}
+		if e2 < dx {
+			err += dx
+			y0 += sy
+		}
+	}
+}
+
